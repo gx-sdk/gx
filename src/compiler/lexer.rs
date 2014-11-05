@@ -78,6 +78,27 @@ pub enum Token {
     TokBitXorEq,    /*  ^= */
     TokLShiftEq,    /* <<= */
     TokRShiftEq,    /* >>= */
+
+    /* keywords */
+
+    TokIf,
+    TokWhile,
+    TokFor,
+    TokStruct,
+    TokUnion,
+    TokEnum,
+}
+
+pub fn find_keyword(id: &str) -> Option<Token> {
+    match id {
+        "if"      => Some(TokIf),
+        "while"   => Some(TokWhile),
+        "for"     => Some(TokFor),
+        "struct"  => Some(TokStruct),
+        "union"   => Some(TokUnion),
+        "enum"    => Some(TokEnum),
+        _         => None,
+    }
 }
 
 pub struct TokenAttr(&'static str, &'static str);
@@ -148,6 +169,13 @@ impl Token {
             TokBitXorEq =>      TokenAttr("'^='",  "^="),
             TokLShiftEq =>      TokenAttr("'<<='", "<<="),
             TokRShiftEq =>      TokenAttr("'>>='", ">>="),
+
+            TokIf =>            TokenAttr("'if'", "if"),
+            TokWhile =>         TokenAttr("'while'", "while"),
+            TokFor =>           TokenAttr("'for'", "for"),
+            TokStruct =>        TokenAttr("'struct'", "struct"),
+            TokUnion =>         TokenAttr("'union'", "union"),
+            TokEnum =>          TokenAttr("'enum'", "enum"),
         }
     }
 
@@ -298,7 +326,12 @@ impl <It: Iterator<IoResult<char>>> Tokenizer<It> {
     }
 
     fn read_identifier(&mut self) -> Option<Token> {
-        Some(TokIdentifier(self.getc_while(|c| { is_identifier_char(c) })))
+        let s = self.getc_while(|c| { is_identifier_char(c) });
+
+        match find_keyword(s.as_slice()) {
+            Some(tok) => Some(tok),
+            None      => Some(TokIdentifier(s)),
+        }
     }
 
     fn read_char_expr(&mut self) -> char {
