@@ -24,7 +24,7 @@ mod driver {
         */
 
         println!("write something:");
-        for x in lexer::Tokenizer::new(stdin().chars()) {
+        for x in lexer::Lexer::new(stdin().chars()) {
             print!("{} ", x.to_repr());
         }
         println!("(eof)");

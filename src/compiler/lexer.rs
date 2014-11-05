@@ -202,11 +202,11 @@ fn escape_str(s: &str) -> String {
     return t;
 }
 
-/* The Tokenizer struct is the gx-lang lexer implementation. It implements
+/* The Lexer struct is the gx-lang lexer implementation. It implements
    the Iterator trait, which yields a stream of tokens lexed out of
    the input character iterator. */
 
-/* Internally, Tokenizer is also capable of un-reading a character from
+/* Internally, Lexer is also capable of un-reading a character from
    the input stream, using an 'ungot' stack, which is an essential
    lexer implementation feature.
                    input pointer
@@ -221,15 +221,15 @@ fn escape_str(s: &str) -> String {
    when ungot is used as a stack in this manner, characters will be
    read back in the opposite order they are ungot. */
 
-pub struct Tokenizer<It> {
+pub struct Lexer<It> {
     input: It,
     ungot: Vec<char>,
     line_number: uint,
 }
 
-impl <It: Iterator<IoResult<char>>> Tokenizer<It> {
-    pub fn new(input: It) -> Tokenizer<It> {
-        Tokenizer {
+impl <It: Iterator<IoResult<char>>> Lexer<It> {
+    pub fn new(input: It) -> Lexer<It> {
+        Lexer {
             input: input,
             ungot: Vec::with_capacity(5),
             line_number: 1,
@@ -520,7 +520,7 @@ impl <It: Iterator<IoResult<char>>> Tokenizer<It> {
     }
 }
 
-impl <It: Iterator<IoResult<char>>> Iterator<Token> for Tokenizer<It> {
+impl <It: Iterator<IoResult<char>>> Iterator<Token> for Lexer<It> {
     fn next(&mut self) -> Option<Token> {
         loop {
             match self.try_token() {
