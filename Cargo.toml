@@ -1,0 +1,7 @@
+[package]
+name = "gx"
+version = "0.0.1"
+authors = [ "Alex Iadicicco <alex@ajitek.net>" ]
+
+[[bin]]
+name = "gx"
