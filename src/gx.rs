@@ -6,8 +6,13 @@ mod driver {
     extern crate getopts;
 
     use std::io::stdin;
+    use compiler::tree;
     use compiler::lexer;
     use compiler::parser;
+
+    fn parse<B: Buffer>(mut f: B) -> tree::StatementList {
+        parser::Parser::new(lexer::Lexer::new(f.chars())).stmt_list()
+    }
 
     pub fn main(args: Vec<String>) {
         /*
@@ -24,16 +29,8 @@ mod driver {
         };
         */
 
-        println!("write something:");
-
-        /* read an expr from the stream */
-        let ex = parser::Parser::new(lexer::Lexer::new(stdin().chars())).expr();
-
-        if ex.is_constant() {
-            println!(" = {}", ex.get_value());
-        } else {
-            println!("expression not constant");
-        }
+        /* read a statement list from the stream */
+        let st = parse(stdin());
     }
 
 }

@@ -104,4 +104,54 @@ impl <It: Iterator<Token>> Parser<It> {
             c => panic!("unexpected {}", c),
         }
     }
+
+    /* stmt-list -> \epsilon
+                 -> stmt stmt-list */
+    pub fn stmt_list(&mut self) -> StatementList {
+        /* this should be unrolled so recursion is not needed */
+
+        let t = self.gettok();
+
+        match t {
+            Token::TokPrint | Token::TokIf | Token::TokIdentifier(_) => {
+                self.untok(t);
+                Node(self.stmt(), box self.stmt_list())
+            },
+
+            _ => {
+                self.untok(t);
+                Nil
+            },
+        }
+    }
+
+    /* stmt -> 'print' expr ';'
+            -> 'if' expr '{' stmt-list '}'
+            -> Identifier '=' expr ';' */
+    pub fn stmt(&mut self) -> Statement {
+        match self.gettok() {
+            Token::TokPrint => {
+                let st = Print(self.expr());
+                self.expect(Token::TokSemicolon);
+                st
+            },
+
+            Token::TokIf => {
+                let ex = self.expr();
+                self.expect(Token::TokLBrace);
+                let st = box self.stmt_list();
+                self.expect(Token::TokRBrace);
+                IfBlock(ex, st)
+            },
+
+            Token::TokIdentifier(s) => {
+                self.expect(Token::TokAssign);
+                let st = Assign(s, self.expr());
+                self.expect(Token::TokSemicolon);
+                st
+            },
+
+            c => panic!("expected 'if', 'print', or assignment, got {}", c),
+        }
+    }
 }

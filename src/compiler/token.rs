@@ -78,6 +78,7 @@ pub enum Token {
     TokStruct,
     TokUnion,
     TokEnum,
+    TokPrint,
 }
 
 pub fn find_keyword(id: &str) -> Option<Token> {
@@ -88,6 +89,7 @@ pub fn find_keyword(id: &str) -> Option<Token> {
         "struct"  => Some(TokStruct),
         "union"   => Some(TokUnion),
         "enum"    => Some(TokEnum),
+        "print"   => Some(TokPrint),
         _         => None,
     }
 }
@@ -167,6 +169,7 @@ impl Token {
             TokStruct =>        TokenAttr("'struct'", "struct"),
             TokUnion =>         TokenAttr("'union'", "union"),
             TokEnum =>          TokenAttr("'enum'", "enum"),
+            TokPrint =>         TokenAttr("'print'", "print"),
         }
     }
 

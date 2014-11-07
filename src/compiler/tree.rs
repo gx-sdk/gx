@@ -89,3 +89,20 @@ impl Expression {
         )
     }
 }
+
+pub enum StatementList {
+    Node(Statement, Box<StatementList>),
+    Nil,
+}
+
+pub enum Statement {
+    Print    (Expression),
+    IfBlock  (Expression, Box<StatementList>),
+    Assign   (String, Expression),
+}
+
+impl StatementList {
+    fn len(&self) -> uint {
+        match *self { Node(_, ref xs) => 1 + xs.len(), Nil => 0 }
+    }
+}
