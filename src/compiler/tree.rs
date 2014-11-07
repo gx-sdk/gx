@@ -39,16 +39,12 @@ impl Operator {
 
     pub fn apply(&self, a: uint, b: uint) -> uint {
         match *self {
-            OprIdentity     => a,
-
-            OprConstant     => a,
-
             OprAdd          => a + b,
             OprSubtract     => a - b,
             OprMultiply     => a * b,
             OprDivide       => a / b,
 
-            _               => 0,
+            _               => a,
         }
     }
 }
@@ -102,7 +98,11 @@ pub enum Statement {
 }
 
 impl StatementList {
-    fn len(&self) -> uint {
+    pub fn len(&self) -> uint {
         match *self { Node(_, ref xs) => 1 + xs.len(), Nil => 0 }
+    }
+
+    pub fn is_nil(&self) -> bool {
+        match *self { Node(_, _) => false, Nil => true }
     }
 }
