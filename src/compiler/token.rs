@@ -1,4 +1,4 @@
-#[deriving(Show)]
+#[deriving(Show,PartialEq)]
 pub enum Token {
     /* this will never be yielded from the lexer; it is used internally to
        indicate that another iteration of the input loop is needed */

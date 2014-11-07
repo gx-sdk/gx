@@ -7,6 +7,7 @@ mod driver {
 
     use std::io::stdin;
     use compiler::lexer;
+    use compiler::parser;
 
     pub fn main(args: Vec<String>) {
         /*
@@ -24,10 +25,15 @@ mod driver {
         */
 
         println!("write something:");
-        for x in lexer::Lexer::new(stdin().chars()) {
-            print!("{} ", x.to_repr());
+
+        /* read an expr from the stream */
+        let ex = parser::Parser::new(lexer::Lexer::new(stdin().chars())).expr();
+
+        if ex.is_constant() {
+            println!(" = {}", ex.get_value());
+        } else {
+            println!("expression not constant");
         }
-        println!("(eof)");
     }
 
 }
