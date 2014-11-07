@@ -68,12 +68,12 @@ impl <It: Iterator<Token>> Parser<It> {
             Token::TokStar => Expression {
                 opr: OprMultiply,
                 opn0: OpnExpression(box opn0),
-                opn1: OpnExpression(box self.expr()),
+                opn1: OpnExpression(box self.term()),
             },
             Token::TokSlash => Expression {
                 opr: OprDivide,
                 opn0: OpnExpression(box opn0),
-                opn1: OpnExpression(box self.expr()),
+                opn1: OpnExpression(box self.term()),
             },
 
             c => { self.untok(c); opn0 }
