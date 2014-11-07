@@ -1,6 +1,6 @@
-mod compiler {
-    pub mod lexer;
-}
+#![feature(globs)]
+
+pub mod compiler;
 
 mod driver {
     extern crate getopts;
