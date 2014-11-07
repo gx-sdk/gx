@@ -2,6 +2,8 @@
 
 pub enum Operator {
     OprIdentity,
+
+    OprIdentifier,
     OprConstant,
 
     OprAdd,
@@ -12,8 +14,9 @@ pub enum Operator {
 
 pub enum Operand {
     OpnNothing,
-    OpnExpression     (Box<Expression>),
-    OpnConstant       (uint),
+    OpnExpression  (Box<Expression>),
+    OpnIdentifier  (String),
+    OpnConstant    (uint),
 }
 
 pub struct Expression {
@@ -25,25 +28,27 @@ pub struct Expression {
 impl Operator {
     pub fn is_binary(&self) -> bool {
         match *self {
-            OprIdentity  => false,
-            OprConstant  => false,
+            OprAdd          => true,
+            OprSubtract     => true,
+            OprMultiply     => true,
+            OprDivide       => true,
 
-            OprAdd       => true,
-            OprSubtract  => true,
-            OprMultiply  => true,
-            OprDivide    => true,
+            _               => false
         }
     }
 
     pub fn apply(&self, a: uint, b: uint) -> uint {
         match *self {
-            OprIdentity  => a,
-            OprConstant  => a,
+            OprIdentity     => a,
 
-            OprAdd       => a + b,
-            OprSubtract  => a - b,
-            OprMultiply  => a * b,
-            OprDivide    => a / b,
+            OprConstant     => a,
+
+            OprAdd          => a + b,
+            OprSubtract     => a - b,
+            OprMultiply     => a * b,
+            OprDivide       => a / b,
+
+            _               => 0,
         }
     }
 }
@@ -51,17 +56,19 @@ impl Operator {
 impl Operand {
     pub fn is_constant(&self) -> bool {
         match *self {
-            OpnNothing             => false,
             OpnConstant(_)         => true,
             OpnExpression(ref ex)  => ex.is_constant(),
+
+            _                      => false,
         }
     }
 
     pub fn get_value(&self) -> uint {
         match *self {
-            OpnNothing             => 0,
             OpnConstant(x)         => x,
             OpnExpression(ref ex)  => ex.get_value(),
+
+            _                      => 0,
         }
     }
 }

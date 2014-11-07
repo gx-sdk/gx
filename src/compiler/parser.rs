@@ -30,6 +30,7 @@ impl <It: Iterator<Token>> Parser<It> {
 
     fn expect(&mut self, t: Token) {
         let t_ = self.gettok();
+
         if t != t_ {
             panic!("expected {}, got {}", t, t_)
         }
@@ -79,13 +80,19 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    /* factor -> NUM
+    /* factor -> Number
+              -> Identifier
               -> '(' expr ')' */
     pub fn factor(&mut self) -> Expression {
         match self.gettok() {
             Token::TokNumber(n) => Expression {
                 opr: OprIdentity,
                 opn0: OpnConstant(n),
+                opn1: OpnNothing,
+            },
+            Token::TokIdentifier(s) => Expression {
+                opr: OprIdentifier,
+                opn0: OpnIdentifier(s),
                 opn1: OpnNothing,
             },
             Token::TokLParen => {
