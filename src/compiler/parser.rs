@@ -35,10 +35,9 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    /* expr  -> term expr'
-       expr' -> \epsilon
-             -> '+' expr
-             -> '-' expr */
+    /* expr  -> term
+             -> term '+' expr
+             -> term '-' expr */
     pub fn expr(&mut self) -> Expression {
         let opn0 = self.term();
 
@@ -58,10 +57,9 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    /* term  -> factor term'
-       term' -> \epsilon
-             -> '*' term
-             -> '/' term */
+    /* term  -> factor
+             -> factor '*' term
+             -> factor '/' term */
     pub fn term(&mut self) -> Expression {
         let opn0 = self.factor();
 
