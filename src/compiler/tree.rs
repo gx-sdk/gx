@@ -45,23 +45,10 @@ impl Operand {
     }
 }
 
-pub enum StatementList {
-    Node(Statement, Box<StatementList>),
-    Nil,
-}
+pub type StatementList = Vec<Box<Statement>>;
 
 pub enum Statement {
     Print    (Operand),
     IfBlock  (Operand, Box<StatementList>),
     Assign   (String, Operand),
-}
-
-impl StatementList {
-    pub fn len(&self) -> uint {
-        match *self { Node(_, ref xs) => 1 + xs.len(), Nil => 0 }
-    }
-
-    pub fn is_nil(&self) -> bool {
-        match *self { Node(_, _) => false, Nil => true }
-    }
 }

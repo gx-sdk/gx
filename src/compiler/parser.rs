@@ -84,20 +84,22 @@ impl <It: Iterator<Token>> Parser<It> {
     /* stmt-list -> \epsilon
                  -> stmt stmt-list */
     pub fn stmt_list(&mut self) -> StatementList {
-        /* this should be unrolled so recursion is not needed */
+        let mut stmts = Vec::new();
 
-        let t = self.gettok();
+        loop {
+            let t = self.gettok();
 
-        match t {
-            Token::TokPrint | Token::TokIf | Token::TokIdentifier(_) => {
-                self.untok(t);
-                Node(self.stmt(), box self.stmt_list())
-            },
+            match t {
+                Token::TokPrint | Token::TokIf | Token::TokIdentifier(_) => {
+                    self.untok(t);
+                    stmts.push(box self.stmt());
+                },
 
-            _ => {
-                self.untok(t);
-                Nil
-            },
+                _ => {
+                    self.untok(t);
+                    return stmts;
+                },
+            }
         }
     }
 

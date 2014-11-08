@@ -50,17 +50,8 @@ mod driver {
     }
 
     fn eval<'a>(stmts: &'a StatementList, mem: &mut TreeMap<&'a str, uint>) {
-        let mut cur = stmts;
-
-        while !cur.is_nil() {
-            match *cur {
-                StatementList::Node(ref st, box ref next) => {
-                    cur = next;
-                    eval_stmt(st, mem);
-                },
-
-                _ => { /* ICE!! */ }
-            }
+        for cur in stmts.iter() {
+            eval_stmt(&**cur, mem);
         }
     }
 
