@@ -39,20 +39,12 @@ impl <It: Iterator<Token>> Parser<It> {
     /* expr  -> term
              -> term '+' expr
              -> term '-' expr */
-    pub fn expr(&mut self) -> Expression {
+    pub fn expr(&mut self) -> Operand {
         let opn0 = self.term();
 
         match self.gettok() {
-            Token::TokPlus => Expression {
-                opr: OprAdd,
-                opn0: OpnExpression(box opn0),
-                opn1: OpnExpression(box self.expr()),
-            },
-            Token::TokMinus => Expression {
-                opr: OprSubtract,
-                opn0: OpnExpression(box opn0),
-                opn1: OpnExpression(box self.expr()),
-            },
+            Token::TokPlus  => Expression(Add,      box opn0, box self.expr()),
+            Token::TokMinus => Expression(Subtract, box opn0, box self.expr()),
 
             c => { self.untok(c); opn0 }
         }
@@ -61,20 +53,12 @@ impl <It: Iterator<Token>> Parser<It> {
     /* term  -> factor
              -> factor '*' term
              -> factor '/' term */
-    pub fn term(&mut self) -> Expression {
+    pub fn term(&mut self) -> Operand {
         let opn0 = self.factor();
 
         match self.gettok() {
-            Token::TokStar => Expression {
-                opr: OprMultiply,
-                opn0: OpnExpression(box opn0),
-                opn1: OpnExpression(box self.term()),
-            },
-            Token::TokSlash => Expression {
-                opr: OprDivide,
-                opn0: OpnExpression(box opn0),
-                opn1: OpnExpression(box self.term()),
-            },
+            Token::TokStar  => Expression(Multiply, box opn0, box self.term()),
+            Token::TokSlash => Expression(Divide,   box opn0, box self.term()),
 
             c => { self.untok(c); opn0 }
         }
@@ -83,18 +67,10 @@ impl <It: Iterator<Token>> Parser<It> {
     /* factor -> Number
               -> Identifier
               -> '(' expr ')' */
-    pub fn factor(&mut self) -> Expression {
+    pub fn factor(&mut self) -> Operand {
         match self.gettok() {
-            Token::TokNumber(n) => Expression {
-                opr: OprIdentity,
-                opn0: OpnConstant(n),
-                opn1: OpnNothing,
-            },
-            Token::TokIdentifier(s) => Expression {
-                opr: OprIdentifier,
-                opn0: OpnIdentifier(s),
-                opn1: OpnNothing,
-            },
+            Token::TokNumber(n) => Constant(n),
+            Token::TokIdentifier(s) => Identifier(s),
             Token::TokLParen => {
                 let ex = self.expr();
                 self.expect(Token::TokRParen);

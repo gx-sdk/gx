@@ -17,11 +17,11 @@ mod driver {
 
     fn eval_opn<'a>(opn: &'a Operand, mem: &TreeMap<&'a str, uint>) -> uint {
         match *opn {
-            Operand::OpnExpression(box ref ex) =>
-                eval_expr(ex, mem),
-            Operand::OpnConstant(c) =>
+            Operand::Expression(opr, box ref opn0, box ref opn1) =>
+                opr.apply(eval_opn(opn0, mem), eval_opn(opn1, mem)),
+            Operand::Constant(c) =>
                 c,
-            Operand::OpnIdentifier(ref id) => match mem.find(&id.as_slice()) {
+            Operand::Identifier(ref id) => match mem.find(&id.as_slice()) {
                 Some(v)  => *v,
                 None     =>  0,
             },
@@ -30,27 +30,20 @@ mod driver {
         }
     }
 
-    fn eval_expr<'a>(expr: &'a Expression, mem: &TreeMap<&'a str, uint>) -> uint {
-        expr.opr.apply(
-            eval_opn(&expr.opn0, mem),
-            eval_opn(&expr.opn1, mem)
-        )
-    }
-
     fn eval_stmt<'a>(stmt: &'a Statement, mem: &mut TreeMap<&'a str, uint>) {
         match *stmt {
-            Statement::Print(ref expr) => {
-                println!("{}", eval_expr(expr, mem));
+            Statement::Print(ref opn) => {
+                println!("{}", eval_opn(opn, mem));
             },
 
-            Statement::IfBlock(ref expr, box ref stmts) => {
-                if eval_expr(expr, mem) != 0 {
+            Statement::IfBlock(ref opn, box ref stmts) => {
+                if eval_opn(opn, mem) != 0 {
                     eval(stmts, mem)
                 };
             },
 
-            Statement::Assign(ref to, ref expr) => {
-                let x = eval_expr(expr, mem);
+            Statement::Assign(ref to, ref opn) => {
+                let x = eval_opn(opn, mem);
                 mem.insert(to.as_slice(), x);
             },
         }
