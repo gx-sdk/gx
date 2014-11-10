@@ -1,4 +1,5 @@
 #![feature(globs)]
+#![feature(struct_variant)]
 
 pub mod compiler;
 
