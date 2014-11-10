@@ -50,3 +50,36 @@
    and blobs of static data, targeting a single backend. A Genesis ROM,
    represented by a Program, is a group of 1 or more 68000 Modules, and 0
    or more Z80 Modules. */
+
+use std::rc::Rc;
+
+pub struct BasicBlock {
+    on_true:   Option<Rc<BasicBlock>>,
+    on_false:  Option<Rc<BasicBlock>>,
+}
+
+pub struct Function {
+    blocks: Vec<Rc<BasicBlock>>,
+}
+
+impl BasicBlock {
+    fn new() -> BasicBlock {
+        BasicBlock {
+            on_true:   None,
+            on_false:  None,
+        }
+    }
+}
+
+impl Function {
+    fn new() -> Function {
+        Function {
+            blocks: Vec::new()
+        }
+    }
+
+    fn add_block(&mut self) -> Rc<BasicBlock> {
+        self.blocks.push(Rc::new(BasicBlock::new()));
+        self.blocks[self.blocks.len() - 1].clone()
+    }
+}
