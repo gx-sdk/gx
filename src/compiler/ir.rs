@@ -51,35 +51,47 @@
    represented by a Program, is a group of 1 or more 68000 Modules, and 0
    or more Z80 Modules. */
 
-use std::rc::Rc;
+extern crate arena;
 
-pub struct BasicBlock {
-    on_true:   Option<Rc<BasicBlock>>,
-    on_false:  Option<Rc<BasicBlock>>,
+use self::arena::TypedArena;
+use std::cell::Cell;
+
+pub struct BasicBlock<'a> {
+    function:  &'a Function<'a>,
+    on_true:   Cell<Option<&'a BasicBlock<'a>>>,
+    on_false:  Cell<Option<&'a BasicBlock<'a>>>,
 }
 
-pub struct Function {
-    blocks: Vec<Rc<BasicBlock>>,
+pub struct Function<'a> {
+    blocks: TypedArena<BasicBlock<'a>>,
 }
 
-impl BasicBlock {
-    fn new() -> BasicBlock {
+impl<'a> BasicBlock<'a> {
+    fn new(f: &'a Function<'a>) -> BasicBlock<'a> {
         BasicBlock {
-            on_true:   None,
-            on_false:  None,
+            function:  f,
+            on_true:   Cell::new(None),
+            on_false:  Cell::new(None),
         }
+    }
+
+    fn set_true(&mut self, branch: Option<&'a BasicBlock<'a>>) {
+        self.on_true.set(branch);
+    }
+
+    fn set_false(&mut self, branch: Option<&'a BasicBlock<'a>>) {
+        self.on_false.set(branch);
     }
 }
 
-impl Function {
-    fn new() -> Function {
+impl<'a> Function<'a> {
+    fn new() -> Function<'a> {
         Function {
-            blocks: Vec::new()
+            blocks: TypedArena::new()
         }
     }
 
-    fn add_block(&mut self) -> Rc<BasicBlock> {
-        self.blocks.push(Rc::new(BasicBlock::new()));
-        self.blocks[self.blocks.len() - 1].clone()
+    fn add_block(&mut self) -> &'a BasicBlock {
+        self.blocks.alloc(BasicBlock::new(self))
     }
 }
