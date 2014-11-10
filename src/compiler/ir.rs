@@ -56,42 +56,83 @@ extern crate arena;
 use self::arena::TypedArena;
 use std::cell::Cell;
 
+#[deriving(PartialEq)]
+pub enum Operation {
+    OpAdd,
+    OpSubtract,
+    OpMultiply,
+    OpDivide,
+
+    OpTestNonzero,
+}
+
+pub enum Value<'a> {
+    Constant(uint),
+    Location(String),
+    InstResult(&'a Instruction<'a>),
+}
+
+pub struct Instruction<'a> {
+    opr:  Operation,
+    opn:  Vec<Value<'a>>,
+}
+
+impl<'a> Instruction<'a> {
+    fn is_terminator(&self) -> bool {
+        self.opr == OpTestNonzero
+    }
+}
+
 pub struct BasicBlock<'a> {
     function:  &'a Function<'a>,
+
+    insts:     Vec<&'a Instruction<'a>>,
+
     on_true:   Cell<Option<&'a BasicBlock<'a>>>,
     on_false:  Cell<Option<&'a BasicBlock<'a>>>,
 }
 
 pub struct Function<'a> {
     blocks: TypedArena<BasicBlock<'a>>,
+    insts:  TypedArena<Instruction<'a>>,
 }
 
 impl<'a> BasicBlock<'a> {
     fn new(f: &'a Function<'a>) -> BasicBlock<'a> {
         BasicBlock {
             function:  f,
+            insts:     Vec::new(),
             on_true:   Cell::new(None),
             on_false:  Cell::new(None),
         }
     }
 
-    fn set_true(&mut self, branch: Option<&'a BasicBlock<'a>>) {
+    fn set_true(&self, branch: Option<&'a BasicBlock<'a>>) {
         self.on_true.set(branch);
     }
 
-    fn set_false(&mut self, branch: Option<&'a BasicBlock<'a>>) {
+    fn set_false(&self, branch: Option<&'a BasicBlock<'a>>) {
         self.on_false.set(branch);
+    }
+
+    fn add_inst(&mut self, i: Instruction<'a>) {
+        self.insts.push(self.function.add_inst(i))
     }
 }
 
 impl<'a> Function<'a> {
     fn new() -> Function<'a> {
         Function {
-            blocks: TypedArena::new()
+            blocks: TypedArena::new(),
+            insts:  TypedArena::new(),
         }
     }
 
-    fn add_block(&mut self) -> &'a BasicBlock {
+    fn add_block(&self) -> &'a BasicBlock {
         self.blocks.alloc(BasicBlock::new(self))
+    }
+
+    fn add_inst(&self, i: Instruction<'a>) -> &'a Instruction {
+        self.insts.alloc(i)
     }
 }
