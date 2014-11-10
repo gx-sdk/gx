@@ -12,16 +12,16 @@ pub fn opn_to_value<'a, 'b>(
             let v0 = opn_to_value(opn0, bb);
             let v1 = opn_to_value(opn1, bb);
 
-            InstResult(bb.add_inst(Instruction {
-                opr: match opr {
+            InstResult(bb.add_inst(
+                match opr {
                     Operator::Add       => OpAdd,
                     Operator::Subtract  => OpSubtract,
                     Operator::Multiply  => OpMultiply,
                     Operator::Divide    => OpDivide,
                 },
 
-                opn: vec!(v0, v1),
-            }))
+                vec!(v0, v1),
+            ))
         },
 
         Operand::Constant(c) =>
@@ -43,18 +43,18 @@ pub fn add_stmt_to_cfg<'a, 'b>(
 ) -> &'b BasicBlock<'b> {
     match *st {
         Statement::Print(ref opn) => {
-            bb.add_inst(Instruction {
-                opr: OpPrint,
-                opn: vec!(opn_to_value(opn, bb)),
-            });
+            bb.add_inst(
+                OpPrint,
+                vec!(opn_to_value(opn, bb)),
+            );
             return bb;
         },
 
         Statement::IfBlock(ref opn, box ref stmts) => {
-            bb.add_inst(Instruction {
-                opr: OpTestNonzero,
-                opn: vec!(opn_to_value(opn, bb))
-            });
+            bb.add_inst(
+                OpTestNonzero,
+                vec!(opn_to_value(opn, bb))
+            );
             let fb = bb.function.add_block();
             let tb = bb.function.add_block();
             add_stmts_to_cfg(stmts, tb);
@@ -64,13 +64,13 @@ pub fn add_stmt_to_cfg<'a, 'b>(
         },
 
         Statement::Assign(ref to, ref opn) => {
-            bb.add_inst(Instruction {
-                opr: OpAssign,
-                opn: vec!(
+            bb.add_inst(
+                OpAssign,
+                vec!(
                     Location(to.clone()),
                     opn_to_value(opn, bb)
                 ),
-            });
+            );
             return bb;
         },
     }

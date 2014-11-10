@@ -76,6 +76,7 @@ pub enum Value<'a> {
 }
 
 pub struct Instruction<'a> {
+    pub num:  uint,
     pub opr:  Operation,
     pub opn:  Vec<Value<'a>>,
 }
@@ -118,9 +119,18 @@ impl<'a> BasicBlock<'a> {
         self.on_false.set(branch);
     }
 
-    pub fn add_inst(&self, i: Instruction<'a>) -> &'a Instruction{
+    pub fn add_inst(
+        &self,
+        opr: Operation,
+        opn: Vec<Value<'a>>
+    ) -> &'a Instruction {
+        let next_num = self.insts.borrow().len();
         let mut v = self.insts.borrow_mut();
-        v.push(self.function.add_inst(i));
+        v.push(self.function.add_inst(Instruction {
+            num: next_num,
+            opr: opr,
+            opn: opn,
+        }));
         v[v.len() - 1]
     }
 }
