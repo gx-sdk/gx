@@ -9,8 +9,10 @@ mod driver {
     use std::io::stdin;
     use std::collections::TreeMap;
     use compiler::tree::*;
+    use compiler::ir;
     use compiler::lexer;
     use compiler::parser;
+    use compiler::front;
 
     fn parse<B: Buffer>(mut f: B) -> StatementList {
         parser::Parser::new(lexer::Lexer::new(f.chars())).stmt_list()
@@ -80,8 +82,9 @@ mod driver {
         /* read a statement list from the stream */
         let st = parse(stdin());
 
-        /* evaluate it! */
-        eval_stmts(&st);
+        /* build IR */
+        let f = ir::Function::new();
+        front::stmt_list_to_ir(&st, &f);
     }
 
 }
