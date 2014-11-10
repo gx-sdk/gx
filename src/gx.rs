@@ -43,28 +43,27 @@ mod driver {
             print!("\n");
         }
 
-        match bb.on_false.get() {
-            Some(fb) => {
-                println!("  bf block{}", fb.num);
-                if fb.num == bb.num + 1 {
-                    dump_bb(fb);
-                }
+        let tb = bb.on_true.get();
+        let fb = bb.on_false.get();
+
+        match (tb, fb) {
+            (Some(tbb), Some(fbb)) => {
+                println!("  bf block{}", fbb.num);
+                dump_bb(tbb)
             },
 
-            None => { },
-        }
-
-        match bb.on_true.get() {
-            Some(tb) => {
-                if tb.num == bb.num + 1 {
-                    dump_bb(tb);
-                } else {
-                    println!("  j block{}", tb.num);
-                }
+            (None,      Some(fbb)) => {
+                println!("  bf block{}", fbb.num);
+                println!("  exit");
             },
 
-            None =>
-                println!("  exit"),
+            (Some(tbb), None     ) => {
+                dump_bb(tbb)
+            },
+
+            (None,      None     ) => {
+                println!("  exit");
+            },
         }
     }
 

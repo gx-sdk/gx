@@ -59,7 +59,8 @@ pub fn add_stmt_to_cfg<'a, 'b>(
             let tb = bb.function.add_block();
             add_stmts_to_cfg(stmts, tb);
             tb.set_true(Some(fb));
-            bb.set_true(Some(fb));
+            bb.set_true(Some(tb));
+            bb.set_false(Some(fb));
             return fb;
         },
 
