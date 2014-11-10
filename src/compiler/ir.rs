@@ -100,6 +100,7 @@ pub struct BasicBlock<'a> {
 pub struct Function<'a> {
     blocks:        TypedArena<BasicBlock<'a>>,
     num_blocks:    Cell<uint>,
+    entry:         Cell<Option<&'a BasicBlock<'a>>>,
 
     insts:         TypedArena<Instruction<'a>>,
 }
@@ -144,6 +145,7 @@ impl<'a> Function<'a> {
         Function {
             blocks:      TypedArena::new(),
             num_blocks:  Cell::new(0),
+            entry:       Cell::new(None),
 
             insts:       TypedArena::new(),
         }
@@ -156,5 +158,9 @@ impl<'a> Function<'a> {
 
     pub fn add_inst(&self, i: Instruction<'a>) -> &'a Instruction {
         self.insts.alloc(i)
+    }
+
+    pub fn set_entry(&self, bb: Option<&'a BasicBlock<'a>>) {
+        self.entry.set(bb);
     }
 }

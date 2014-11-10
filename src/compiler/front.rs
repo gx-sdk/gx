@@ -90,5 +90,7 @@ pub fn add_stmts_to_cfg<'a, 'b>(
 }
 
 pub fn stmt_list_to_ir<'a, 'b>(st: &'a StatementList, f: &'b Function<'b>) {
-    add_stmts_to_cfg(st, f.add_block());
+    let entry = f.add_block();
+    add_stmts_to_cfg(st, entry);
+    f.set_entry(Some(entry));
 }
