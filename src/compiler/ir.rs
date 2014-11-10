@@ -163,4 +163,8 @@ impl<'a> Function<'a> {
     pub fn set_entry(&self, bb: Option<&'a BasicBlock<'a>>) {
         self.entry.set(bb);
     }
+
+    pub fn get_entry(&self) -> Option<&'a BasicBlock<'a>> {
+        self.entry.get()
+    }
 }
