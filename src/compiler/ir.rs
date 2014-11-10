@@ -89,6 +89,7 @@ impl<'a> Instruction<'a> {
 
 pub struct BasicBlock<'a> {
     pub function:  &'a Function<'a>,
+    pub num:       uint,
 
     pub insts:     RefCell<Vec<&'a Instruction<'a>>>,
 
@@ -97,14 +98,17 @@ pub struct BasicBlock<'a> {
 }
 
 pub struct Function<'a> {
-    blocks: TypedArena<BasicBlock<'a>>,
-    insts:  TypedArena<Instruction<'a>>,
+    blocks:        TypedArena<BasicBlock<'a>>,
+    num_blocks:    Cell<uint>,
+
+    insts:         TypedArena<Instruction<'a>>,
 }
 
 impl<'a> BasicBlock<'a> {
     pub fn new(f: &'a Function<'a>) -> BasicBlock<'a> {
         BasicBlock {
             function:  f,
+            num:       f.num_blocks.get(),
             insts:     RefCell::new(Vec::new()),
             on_true:   Cell::new(None),
             on_false:  Cell::new(None),
@@ -138,12 +142,15 @@ impl<'a> BasicBlock<'a> {
 impl<'a> Function<'a> {
     pub fn new() -> Function<'a> {
         Function {
-            blocks: TypedArena::new(),
-            insts:  TypedArena::new(),
+            blocks:      TypedArena::new(),
+            num_blocks:  Cell::new(0),
+
+            insts:       TypedArena::new(),
         }
     }
 
     pub fn add_block(&self) -> &'a BasicBlock {
+        self.num_blocks.set(self.num_blocks.get() + 1);
         self.blocks.alloc(BasicBlock::new(self))
     }
 
