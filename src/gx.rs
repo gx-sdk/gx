@@ -7,7 +7,6 @@ mod driver {
     extern crate getopts;
 
     use std::io::stdin;
-    use std::collections::TreeMap;
     use compiler::tree::*;
     use compiler::ir;
     use compiler::lexer;
@@ -16,52 +15,6 @@ mod driver {
 
     fn parse<B: Buffer>(mut f: B) -> StatementList {
         parser::Parser::new(lexer::Lexer::new(f.chars())).stmt_list()
-    }
-
-    fn eval_opn<'a>(opn: &'a Operand, mem: &TreeMap<&'a str, uint>) -> uint {
-        match *opn {
-            Operand::Expression(opr, box ref opn0, box ref opn1) =>
-                opr.apply(eval_opn(opn0, mem), eval_opn(opn1, mem)),
-            Operand::Constant(c) =>
-                c,
-            Operand::Identifier(ref id) => match mem.find(&id.as_slice()) {
-                Some(v)  => *v,
-                None     =>  0,
-            },
-
-            _ => 0,
-        }
-    }
-
-    fn eval_stmt<'a>(stmt: &'a Statement, mem: &mut TreeMap<&'a str, uint>) {
-        match *stmt {
-            Statement::Print(ref opn) => {
-                println!("{}", eval_opn(opn, mem));
-            },
-
-            Statement::IfBlock(ref opn, box ref stmts) => {
-                if eval_opn(opn, mem) != 0 {
-                    eval(stmts, mem)
-                };
-            },
-
-            Statement::Assign(ref to, ref opn) => {
-                let x = eval_opn(opn, mem);
-                mem.insert(to.as_slice(), x);
-            },
-        }
-    }
-
-    fn eval<'a>(stmts: &'a StatementList, mem: &mut TreeMap<&'a str, uint>) {
-        for cur in stmts.iter() {
-            eval_stmt(&**cur, mem);
-        }
-    }
-
-    fn eval_stmts<'a>(stmts: &'a StatementList) {
-        let ref mut mem = TreeMap::new();
-
-        eval(stmts, mem)
     }
 
     pub fn main(args: Vec<String>) {
