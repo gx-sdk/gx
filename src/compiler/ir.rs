@@ -54,12 +54,12 @@
 use std::rc::Rc;
 
 pub struct BasicBlock {
-    on_true:   Option<Box<BasicBlock>>,
-    on_false:  Option<Box<BasicBlock>>,
+    on_true:   Option<Rc<BasicBlock>>,
+    on_false:  Option<Rc<BasicBlock>>,
 }
 
 pub struct Function {
-    blocks: Vec<Box<BasicBlock>>,
+    blocks: Vec<Rc<BasicBlock>>,
 }
 
 impl BasicBlock {
@@ -78,8 +78,8 @@ impl Function {
         }
     }
 
-    fn add_block<'a>(&'a mut self) -> &'a BasicBlock {
-        self.blocks.push(box BasicBlock::new());
-        &*self.blocks[self.blocks.len() - 1]
+    fn add_block(&mut self) -> Rc<BasicBlock> {
+        self.blocks.push(Rc::new(BasicBlock::new()));
+        self.blocks[self.blocks.len() - 1].clone()
     }
 }
