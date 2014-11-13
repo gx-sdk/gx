@@ -3,7 +3,7 @@ use std::char::is_whitespace;
 use std::char::is_digit;
 use std::char::is_digit_radix;
 use std::char::is_alphanumeric;
-use std::uint;
+use std::num::FromStrRadix;
 
 use compiler::token::*;
 
@@ -124,7 +124,7 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
                 (10u, s.as_slice())
             };
 
-        match uint::parse_bytes(num.as_bytes(), base) {
+        match FromStrRadix::from_str_radix(num, base) {
             Some(x) => Some(TokNumber(x)),
             None => self.die(
                 format!("invalid base {} constant {}", base, s).as_slice()
@@ -148,11 +148,12 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
                 'r' => '\r',
                 't' => '\t',
                 'x' => {
-                    let u = self.getc_or_die() as u8;
-                    let v = self.getc_or_die() as u8;
-
-                    match uint::parse_bytes(&[u, v], 16) {
-                        Some(x) => (x as u8) as char,
+                    let u = self.getc_or_die();
+                    let v = self.getc_or_die();
+                    let string = String::from_chars([u, v]);
+                    let res: Option<u8> = FromStrRadix::from_str_radix(&*string, 16);
+                    match res {
+                        Some(x) => x as char,
                         None => self.die("invalid \\xNN escape sequence")
                     }
                 },
