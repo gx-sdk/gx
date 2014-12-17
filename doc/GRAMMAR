@@ -48,6 +48,7 @@ I am writing a recursive descent parser by hand for this.
 
     <storage-decl> ::= var <id-list> : <type-spec> ;
                      | var <id> : <type-spec> = <expr> ;
+      <const-decl> ::= const <id> : <type-spec> = <constant> ;
 
 
        <func-decl> ::= <func-heading> { <func-body> }
@@ -74,6 +75,8 @@ I am writing a recursive descent parser by hand for this.
                      | break ;
                      | continue ;
                      | repeat ;
+                     | return ;
+                     | return <expr> ;
 
          <if-stmt> ::= if ( <expr> ) <stmt>
                      | if ( <expr> ) <stmt> else <stmt>
@@ -155,7 +158,6 @@ I am writing a recursive descent parser by hand for this.
                      | <ex-primary> ( <ex-list> )
                      | <ex-primary> [ <expr> ]
                      | <ex-primary> . <id>
-                     | <ex-primary> -> <id>
       <ex-primary> ::= <id>
                      | <constant>
                      | ( <expr> )

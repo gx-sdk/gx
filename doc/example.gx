@@ -1,0 +1,28 @@
+unit Invaders {
+	pub type AlienFlags: bitvec<16>(dead:1, flying:1);
+	pub type Alien: struct {
+		var flags: AlienFlags;
+
+		var  x,  y: s16;
+		var vx, vy: s16;
+	};
+
+	const ALIEN_SPEED: s16 = 20;
+	const ALIEN_GRAVITY: s16 = 2;
+
+	var aliens: [32]Alien;
+
+	fn updateAlien(a: *Alien): void {
+		if (a.flags.dead)
+			return;
+
+		a.x += a.vx;
+		a.y += a.vy;
+		a.vy += ALIEN_GRAVITY;
+	}
+
+	pub fn updateAllAliens(): void {
+		for (a in aliens)
+			updateAlien(a);
+	}
+}
