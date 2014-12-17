@@ -1,0 +1,161 @@
+A recursive descent grammar for the gx language. Because I am insane,
+I am writing a recursive descent parser by hand for this.
+
+
+              <id> ::= (identifier token)
+   <binary-string> ::= (string of 0s and 1s)
+          <number> ::= (any constant integer)
+        <constant> ::= (any constant expression)
+
+         <id-list> ::= <id> , <id-list>
+                     | <id>
+
+
+            <file> ::= <unit> <file>
+                     | \e
+            <unit> ::= unit <id> { <decl-list> }
+
+
+       <decl-list> ::= <decl> <decl-list>
+                     | \e
+            <decl> ::= <decl-scope> <decl-body>
+      <decl-scope> ::= pub
+                     | \e
+       <decl-body> ::= <type-decl>
+                     | <func-decl>
+                     | <storage-decl>
+
+
+       <type-decl> ::= type <id> : <type-spec> ;
+       <type-spec> ::= <id>
+                     | * <type-spec>
+                     | [ <number> ] <type-spec>
+                     | bcd < <number> >
+                     | fixed < <number> , <number> >
+                     | <struct-spec>
+                     | <bitvec-spec>
+
+     <struct-spec> ::= struct { <struct-body> }
+     <struct-body> ::= <storage-decl> <struct-body>
+                     | \e
+
+     <bitvec-spec> ::= bitvec ( <bitvec-body> )
+     <bitvec-body> ::= <bitvec-member> , <bitvec-body>
+                     | <bitvec-member>
+   <bitvec-member> ::= <binary-string>
+                     | <id> : <number>
+
+
+    <storage-decl> ::= var <id-list> : <type-spec> ;
+                     | var <id> : <type-spec> = <expr> ;
+
+
+       <func-decl> ::= <func-heading> { <func-body> }
+    <func-heading> ::= fn <id> ( <func-params> ) : <type-spec>
+     <func-params> ::= <func-params'>
+                     | \e
+    <func-params'> ::= <func-param> , <func-params'>
+                     | <func-param>
+      <func-param> ::= <id-list> : <type-spec>
+       <func-body> ::= <stmt-list>
+
+
+       <stmt-list> ::= <stmt> <stmt-list>
+                     | \e
+
+            <stmt> ::= <expr> ;
+                     | { <stmt-list> }
+                     | <storage-decl>
+                     | <if-stmt>
+                     | <switch-stmt>
+                     | <loop-stmt>
+                     | <while-stmt>
+                     | <for-stmt>
+                     | break ;
+                     | continue ;
+                     | repeat ;
+
+         <if-stmt> ::= if ( <expr> ) <stmt>
+                     | if ( <expr> ) <stmt> else <stmt>
+
+     <switch-stmt> ::= switch ( <expr> ) { <switch-body> }
+     <switch-body> ::= <switch-case> <switch-body>
+                     | \e
+     <switch-case> ::= case <const> : <stmt-list>
+                     | default : <stmt-list>
+
+       <loop-stmt> ::= loop <stmt>
+
+      <while-stmt> ::= while ( <expr> ) <stmt>
+
+        <for-stmt> ::= for ( <id> in <expr> ) <stmt>
+
+
+            <expr> ::= <ex-comma>
+
+         <ex-list> ::= <ex-list'>
+                     | \e
+        <ex-list'> ::= <ex-assign> , <ex-list'>
+                     | <ex-assign>
+
+        <ex-comma> ::= <ex-assign>
+                     | <ex-assign> , <ex-comma>
+       <ex-assign> ::= <ex-tern>
+                     | <ex-tern> = <ex-assign>
+                     | <ex-tern> += <ex-assign>
+                     | <ex-tern> -= <ex-assign>
+                     | <ex-tern> *= <ex-assign>
+                     | <ex-tern> /= <ex-assign>
+                     | <ex-tern> %= <ex-assign>
+                     | <ex-tern> <<= <ex-assign>
+                     | <ex-tern> >>= <ex-assign>
+                     | <ex-tern> &= <ex-assign>
+                     | <ex-tern> ^= <ex-assign>
+                     | <ex-tern> |= <ex-assign>
+         <ex-tern> ::= <ex-lor>
+                     | <ex-lor> ? <ex-lor> : <ex-tern>
+          <ex-lor> ::= <ex-land>
+                     | <ex-land> || <ex-lor>
+         <ex-land> ::= <ex-bor>
+                     | <ex-bor> && <ex-land>
+          <ex-bor> ::= <ex-bxor>
+                     | <ex-bxor> | <ex-bor>
+         <ex-bxor> ::= <ex-band>
+                     | <ex-band> ^ <ex-bxor>
+         <ex-band> ::= <ex-eq>
+                     | <ex-eq> & <ex-band>
+           <ex-eq> ::= <ex-cmp>
+                     | <ex-cmp> == <ex-eq>
+                     | <ex-cmp> != <ex-eq>
+          <ex-cmp> ::= <ex-shift>
+                     | <ex-shift> < <ex-cmp>
+                     | <ex-shift> > <ex-cmp>
+                     | <ex-shift> <= <ex-cmp>
+                     | <ex-shift> >= <ex-cmp>
+        <ex-shift> ::= <ex-add>
+                     | <ex-add> << <ex-shift>
+                     | <ex-add> >> <ex-shift>
+          <ex-add> ::= <ex-mul>
+                     | <ex-mul> + <ex-add>
+                     | <ex-mul> - <ex-add>
+          <ex-mul> ::= <ex-unary>
+                     | <ex-unary> * <ex-mul>
+                     | <ex-unary> / <ex-mul>
+                     | <ex-unary> % <ex-mul>
+        <ex-unary> ::= ++ <ex-unary>
+                     | -- <ex-unary>
+                     | ! <ex-unary>
+                     | ~ <ex-unary>
+                     | * <ex-unary>
+                     | & <ex-unary>
+                     | sizeof <ex-unary>
+                     | <ex-bottom>
+       <ex-bottom> ::= <ex-primary> ++
+                     | <ex-primary> --
+                     | <ex-primary> ( <ex-list> )
+                     | <ex-primary> [ <expr> ]
+                     | <ex-primary> . <id>
+                     | <ex-primary> -> <id>
+      <ex-primary> ::= <id>
+                     | <constant>
+                     | ( <expr> )
