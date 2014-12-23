@@ -23,7 +23,9 @@ I am writing a recursive descent parser by hand for this.
                      | \e
        <decl-body> ::= <type-decl>
                      | <func-decl>
-                     | <storage-decl>
+                     | <global-var-decl>
+                     | <const-decl>
+                     | <region-decl>
 
 
        <type-decl> ::= type <id> : <type-spec> ;
@@ -36,20 +38,36 @@ I am writing a recursive descent parser by hand for this.
                      | <bitvec-spec>
 
      <struct-spec> ::= struct { <struct-body> }
-     <struct-body> ::= <storage-decl> <struct-body>
+     <struct-body> ::= <var-decl> <struct-body>
                      | \e
 
-     <bitvec-spec> ::= bitvec ( <bitvec-body> )
+     <bitvec-spec> ::= bitvec <bitvec-size> ( <bitvec-body> )
+     <bitvec-size> ::= < <number> >
+                     | \e
      <bitvec-body> ::= <bitvec-member> , <bitvec-body>
                      | <bitvec-member>
    <bitvec-member> ::= <binary-string>
                      | <id> : <number>
 
 
-    <storage-decl> ::= var <id-list> : <type-spec> ;
-                     | var <id> : <type-spec> = <expr> ;
+ <global-var-decl> ::= var <var-scope> <var-decl>
+       <var-scope> ::= ram <ram-desc>
+                     | rom <rom-desc>
+                     | \e
+        <ram-desc> ::= region ( <id> , <id> )
+                     | align ( <number> )
+                     | \e
+        <rom-desc> ::= frame ( <number> )
+                     | align ( <number> )
+                     | \e
+        <var-decl> ::= <id-list> : <type-spec> ;
+                     | <id> : <type-spec> = <expr> ;
+
       <const-decl> ::= const <id> : <type-spec> = <constant> ;
 
+     <region-decl> ::= region ( <id> , <id> ) { <region-decl-body> }
+<region-decl-body> ::= <global-var-decl> <region-decl-body>
+                     | \e
 
        <func-decl> ::= <func-heading> { <func-body> }
     <func-heading> ::= fn <id> ( <func-params> ) : <type-spec>
@@ -66,7 +84,7 @@ I am writing a recursive descent parser by hand for this.
 
             <stmt> ::= <expr> ;
                      | { <stmt-list> }
-                     | <storage-decl>
+                     | <var-decl>
                      | <if-stmt>
                      | <switch-stmt>
                      | <loop-stmt>
