@@ -193,7 +193,6 @@ impl Token {
             TokLShiftEq =>      TokenAttr("'<<='", "<<="),
             TokRShiftEq =>      TokenAttr("'>>='", ">>="),
 
-            TokAlign =>         TokenAttr("'align'", "align"),
             TokBitvec =>        TokenAttr("'bitvec'", "bitvec"),
             TokBreak =>         TokenAttr("'break'", "break"),
             TokCase =>          TokenAttr("'case'", "case"),
@@ -203,7 +202,6 @@ impl Token {
             TokElse =>          TokenAttr("'else'", "else"),
             TokFor =>           TokenAttr("'for'", "for"),
             TokFn =>            TokenAttr("'fn'", "fn"),
-            TokFrame =>         TokenAttr("'frame'", "frame"),
             TokIf =>            TokenAttr("'if'", "if"),
             TokLoop =>          TokenAttr("'loop'", "loop"),
             TokPub =>           TokenAttr("'pub'", "pub"),
