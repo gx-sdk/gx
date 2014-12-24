@@ -30,12 +30,13 @@ I am writing a recursive descent parser by hand for this.
 
        <type-decl> ::= type <id> : <type-spec> ;
        <type-spec> ::= <id>
+                     | <id> < <type-param-list> >
                      | * <type-spec>
                      | [ <number> ] <type-spec>
-                     | bcd < <number> >
-                     | fixed < <number> , <number> >
                      | <struct-spec>
                      | <bitvec-spec>
+ <type-param-list> ::= <constant> , <type-param-list>
+                     | <constant>
 
      <struct-spec> ::= struct { <struct-body> }
      <struct-body> ::= <var-decl> <struct-body>

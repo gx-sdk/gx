@@ -73,7 +73,6 @@ pub enum Token {
     /* keywords */
 
     TokAlign,
-    TokBcd,
     TokBitvec,
     TokBreak,
     TokCase,
@@ -81,7 +80,6 @@ pub enum Token {
     TokContinue,
     TokDefault,
     TokElse,
-    TokFixed,
     TokFor,
     TokFn,
     TokFrame,
@@ -103,7 +101,6 @@ pub enum Token {
 pub fn find_keyword(id: &str) -> Option<Token> {
     match id {
         "align"     => Some(TokAlign),
-        "bcd"       => Some(TokBcd),
         "bitvec"    => Some(TokBitvec),
         "break"     => Some(TokBreak),
         "case"      => Some(TokCase),
@@ -111,7 +108,6 @@ pub fn find_keyword(id: &str) -> Option<Token> {
         "continue"  => Some(TokContinue),
         "default"   => Some(TokDefault),
         "else"      => Some(TokElse),
-        "fixed"     => Some(TokFixed),
         "for"       => Some(TokFor),
         "fn"        => Some(TokFn),
         "frame"     => Some(TokFrame),
@@ -202,7 +198,6 @@ impl Token {
             TokRShiftEq =>      TokenAttr("'>>='", ">>="),
 
             TokAlign =>         TokenAttr("'align'", "align"),
-            TokBcd =>           TokenAttr("'bcd'", "bcd"),
             TokBitvec =>        TokenAttr("'bitvec'", "bitvec"),
             TokBreak =>         TokenAttr("'break'", "break"),
             TokCase =>          TokenAttr("'case'", "case"),
@@ -210,7 +205,6 @@ impl Token {
             TokContinue =>      TokenAttr("'continue'", "continue"),
             TokDefault =>       TokenAttr("'default'", "default"),
             TokElse =>          TokenAttr("'else'", "else"),
-            TokFixed =>         TokenAttr("'fixed'", "fixed"),
             TokFor =>           TokenAttr("'for'", "for"),
             TokFn =>            TokenAttr("'fn'", "fn"),
             TokFrame =>         TokenAttr("'frame'", "frame"),
