@@ -90,7 +90,7 @@ impl <It: Iterator<Token>> Parser<It> {
             let t = self.gettok();
 
             match t {
-                Token::TokPrint | Token::TokIf | Token::TokIdentifier(_) => {
+                Token::TokIf | Token::TokIdentifier(_) => {
                     self.untok(t);
                     stmts.push(box self.stmt());
                 },
@@ -108,12 +108,6 @@ impl <It: Iterator<Token>> Parser<It> {
             -> Identifier '=' expr ';' */
     pub fn stmt(&mut self) -> Statement {
         match self.gettok() {
-            Token::TokPrint => {
-                let st = Print(self.expr());
-                self.expect(Token::TokSemicolon);
-                st
-            },
-
             Token::TokIf => {
                 let ex = self.expr();
                 self.expect(Token::TokLBrace);
