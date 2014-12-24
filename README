@@ -1,1 +1,5 @@
-oh, just a thing..
+This is the compiler for the gx language, which forms the core of gx-sdk.
+
+gx is a language designed to compile to Sega Genesis systems. It is
+a component of a larger toolkit for developing Sega Genesis games,
+called gx-sdk.
