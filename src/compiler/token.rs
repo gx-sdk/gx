@@ -72,7 +72,6 @@ pub enum Token {
 
     /* keywords */
 
-    TokAlign,
     TokBitvec,
     TokBreak,
     TokCase,
@@ -82,7 +81,6 @@ pub enum Token {
     TokElse,
     TokFor,
     TokFn,
-    TokFrame,
     TokIf,
     TokLoop,
     TokPub,
@@ -100,7 +98,6 @@ pub enum Token {
 
 pub fn find_keyword(id: &str) -> Option<Token> {
     match id {
-        "align"     => Some(TokAlign),
         "bitvec"    => Some(TokBitvec),
         "break"     => Some(TokBreak),
         "case"      => Some(TokCase),
@@ -110,7 +107,6 @@ pub fn find_keyword(id: &str) -> Option<Token> {
         "else"      => Some(TokElse),
         "for"       => Some(TokFor),
         "fn"        => Some(TokFn),
-        "frame"     => Some(TokFrame),
         "if"        => Some(TokIf),
         "loop"      => Some(TokLoop),
         "pub"       => Some(TokPub),
