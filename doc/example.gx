@@ -14,6 +14,8 @@ unit Invaders {
 		var aliens: [32]Alien;
 	}
 
+	var ram region(state, game) align(3) score: int;
+
 	fn updateAlien(a: *Alien): void {
 		if (a.flags.dead)
 			return;

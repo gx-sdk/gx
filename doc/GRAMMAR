@@ -51,22 +51,23 @@ I am writing a recursive descent parser by hand for this.
                      | <id> : <number>
 
 
- <global-var-decl> ::= var <var-scope> <var-decl>
-       <var-scope> ::= ram <ram-desc>
-                     | rom <rom-desc>
+ <global-var-decl> ::= var <storage> <var-decl>
+         <storage> ::= <storage-loc> <storage-params>
                      | \e
-        <ram-desc> ::= region ( <id> , <id> )
-                     | align ( <number> )
+     <storage-loc> ::= ram
+                     | rom
                      | \e
-        <rom-desc> ::= frame ( <number> )
-                     | align ( <number> )
+  <storage-params> ::= <storage-param> <storage-params>
                      | \e
+   <storage-param> ::= <region-name>
+                     | <id> ( <constant-list> )
         <var-decl> ::= <id-list> : <type-spec> ;
                      | <id> : <type-spec> = <expr> ;
 
       <const-decl> ::= const <id> : <type-spec> = <constant> ;
 
-     <region-decl> ::= region ( <id> , <id> ) { <region-decl-body> }
+     <region-decl> ::= <region-name> { <region-decl-body> }
+     <region-name> ::= region ( <id> , <id> )
 <region-decl-body> ::= <global-var-decl> <region-decl-body>
                      | \e
 
