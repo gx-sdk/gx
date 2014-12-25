@@ -274,21 +274,21 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
 
             '~' => match self.getc_or_zero() {
                 '=' => Some(Token::BitNotEq),
-                d   => { self.ungetc(d); Some(Token::BitNot) }
+                d   => { self.ungetc(d); Some(Token::Tilde) }
             },
             '&' => match self.getc_or_zero() {
-                '&' => Some(Token::BoolAnd),
+                '&' => Some(Token::DblAmp),
                 '=' => Some(Token::BitAndEq),
-                d   => { self.ungetc(d); Some(Token::BitAnd) }
+                d   => { self.ungetc(d); Some(Token::Amp) }
             },
             '|' => match self.getc_or_zero() {
-                '|' => Some(Token::BoolOr),
+                '|' => Some(Token::DblPipe),
                 '=' => Some(Token::BitOrEq),
-                d   => { self.ungetc(d); Some(Token::BitOr) }
+                d   => { self.ungetc(d); Some(Token::Pipe) }
             },
             '^' => match self.getc_or_zero() {
                 '=' => Some(Token::BitXorEq),
-                d   => { self.ungetc(d); Some(Token::BitXor) }
+                d   => { self.ungetc(d); Some(Token::Caret) }
             },
 
             '<' => match self.getc_or_zero() {
@@ -312,7 +312,7 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
 
             '!' => match self.getc_or_zero() {
                 '=' => Some(Token::NotEq),
-                d   => { self.ungetc(d); Some(Token::BoolNot) }
+                d   => { self.ungetc(d); Some(Token::Excl) }
             },
 
             '#' => { /* to-eol comment, rofl */

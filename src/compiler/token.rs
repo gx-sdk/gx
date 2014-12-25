@@ -36,19 +36,19 @@ pub enum Token {
     Slash,       /*  /  */
     Mod,         /*  %  */
 
-    BitNot,      /*  ~  */
-    BitAnd,      /*  &  */
-    BitOr,       /*  |  */
-    BitXor,      /*  ^  */
+    Tilde,       /*  ~  */
+    Amp,         /*  &  */
+    Pipe,        /*  |  */
+    Caret,       /*  ^  */
     LShift,      /*  << */
     RShift,      /*  >> */
 
     Incr,        /*  ++ */
     Decr,        /*  -- */
 
-    BoolNot,     /*  !  */
-    BoolAnd,     /*  && */
-    BoolOr,      /*  || */
+    Excl,        /*  !  */
+    DblAmp,      /*  && */
+    DblPipe,     /*  || */
 
     Eq,          /*  == */
     NotEq,       /*  != */
@@ -159,19 +159,19 @@ impl Token {
             Token::Slash =>         TokenAttr("'/'",   "/"),
             Token::Mod =>           TokenAttr("'%'",   "%"),
 
-            Token::BitNot =>        TokenAttr("'~'",   "~"),
-            Token::BitAnd =>        TokenAttr("'&'",   "&"),
-            Token::BitOr =>         TokenAttr("'|'",   "|"),
-            Token::BitXor =>        TokenAttr("'^'",   "^"),
+            Token::Tilde =>         TokenAttr("'~'",   "~"),
+            Token::Amp =>           TokenAttr("'&'",   "&"),
+            Token::Pipe =>          TokenAttr("'|'",   "|"),
+            Token::Caret =>         TokenAttr("'^'",   "^"),
             Token::LShift =>        TokenAttr("'<<'",  "<<"),
             Token::RShift =>        TokenAttr("'>>'",  ">>"),
 
             Token::Incr =>          TokenAttr("'++'",  "++"),
             Token::Decr =>          TokenAttr("'--'",  "--"),
 
-            Token::BoolNot =>       TokenAttr("'!'",   "!"),
-            Token::BoolAnd =>       TokenAttr("'&&'",  "&&"),
-            Token::BoolOr =>        TokenAttr("'||'",  "||"),
+            Token::Excl =>          TokenAttr("'!'",   "!"),
+            Token::DblAmp =>        TokenAttr("'&&'",  "&&"),
+            Token::DblPipe =>       TokenAttr("'||'",  "||"),
 
             Token::Eq =>            TokenAttr("'=='",  "=="),
             Token::NotEq =>         TokenAttr("'!='",  "!="),
