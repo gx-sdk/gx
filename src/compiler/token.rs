@@ -2,124 +2,124 @@
 pub enum Token {
     /* this will never be yielded from the lexer; it is used internally to
        indicate that another iteration of the input loop is needed */
-    TokIgnore,
+    Ignore,
 
     /* parameterized token types */
 
-    TokNumber(uint),
-    TokIdentifier(String),
-    TokString(String),
-    TokCharacter(char),
+    Number(uint),
+    Identifier(String),
+    String(String),
+    Character(char),
 
     /* glyphs */
 
-    TokLParen,      /*  (  */
-    TokRParen,      /*  )  */
-    TokLBrack,      /*  [  */
-    TokRBrack,      /*  ]  */
-    TokLBrace,      /*  {  */
-    TokRBrace,      /*  }  */
+    LParen,      /*  (  */
+    RParen,      /*  )  */
+    LBrack,      /*  [  */
+    RBrack,      /*  ]  */
+    LBrace,      /*  {  */
+    RBrace,      /*  }  */
 
-    TokDot,         /*  .  */
-    TokComma,       /*  ,  */
-    TokColon,       /*  :  */
-    TokSemicolon,   /*  ;  */
-    TokQuestion,    /*  ?  */
+    Dot,         /*  .  */
+    Comma,       /*  ,  */
+    Colon,       /*  :  */
+    Semicolon,   /*  ;  */
+    Question,    /*  ?  */
 
-    TokLArr,        /*  <- */
-    TokRArr,        /*  -> */
-    TokRDblArr,     /*  => */
+    LArr,        /*  <- */
+    RArr,        /*  -> */
+    RDblArr,     /*  => */
 
-    TokPlus,        /*  +  */
-    TokMinus,       /*  -  */
-    TokStar,        /*  *  */
-    TokSlash,       /*  /  */
-    TokMod,         /*  %  */
+    Plus,        /*  +  */
+    Minus,       /*  -  */
+    Star,        /*  *  */
+    Slash,       /*  /  */
+    Mod,         /*  %  */
 
-    TokBitNot,      /*  ~  */
-    TokBitAnd,      /*  &  */
-    TokBitOr,       /*  |  */
-    TokBitXor,      /*  ^  */
-    TokLShift,      /*  << */
-    TokRShift,      /*  >> */
+    BitNot,      /*  ~  */
+    BitAnd,      /*  &  */
+    BitOr,       /*  |  */
+    BitXor,      /*  ^  */
+    LShift,      /*  << */
+    RShift,      /*  >> */
 
-    TokIncr,        /*  ++ */
-    TokDecr,        /*  -- */
+    Incr,        /*  ++ */
+    Decr,        /*  -- */
 
-    TokBoolNot,     /*  !  */
-    TokBoolAnd,     /*  && */
-    TokBoolOr,      /*  || */
+    BoolNot,     /*  !  */
+    BoolAnd,     /*  && */
+    BoolOr,      /*  || */
 
-    TokEq,          /*  == */
-    TokNotEq,       /*  != */
-    TokLess,        /*  <  */
-    TokGreater,     /*  >  */
-    TokLessEq,      /*  <= */
-    TokGreaterEq,   /*  >= */
+    Eq,          /*  == */
+    NotEq,       /*  != */
+    Less,        /*  <  */
+    Greater,     /*  >  */
+    LessEq,      /*  <= */
+    GreaterEq,   /*  >= */
 
-    TokAssign,      /*  =  */
-    TokPlusEq,      /*  += */
-    TokMinusEq,     /*  -= */
-    TokStarEq,      /*  *= */
-    TokSlashEq,     /*  /= */
-    TokModEq,       /*  %= */
-    TokBitNotEq,    /*  ~= */
-    TokBitAndEq,    /*  &= */
-    TokBitOrEq,     /*  |= */
-    TokBitXorEq,    /*  ^= */
-    TokLShiftEq,    /* <<= */
-    TokRShiftEq,    /* >>= */
+    Assign,      /*  =  */
+    PlusEq,      /*  += */
+    MinusEq,     /*  -= */
+    StarEq,      /*  *= */
+    SlashEq,     /*  /= */
+    ModEq,       /*  %= */
+    BitNotEq,    /*  ~= */
+    BitAndEq,    /*  &= */
+    BitOrEq,     /*  |= */
+    BitXorEq,    /*  ^= */
+    LShiftEq,    /* <<= */
+    RShiftEq,    /* >>= */
 
     /* keywords */
 
-    TokBitvec,
-    TokBreak,
-    TokCase,
-    TokConst,
-    TokContinue,
-    TokDefault,
-    TokElse,
-    TokFor,
-    TokFn,
-    TokIf,
-    TokLoop,
-    TokPub,
-    TokRegion,
-    TokRepeat,
-    TokReturn,
-    TokRam,
-    TokRom,
-    TokSizeof,
-    TokStruct,
-    TokUnit,
-    TokVar,
-    TokWhile,
+    Bitvec,
+    Break,
+    Case,
+    Const,
+    Continue,
+    Default,
+    Else,
+    For,
+    Fn,
+    If,
+    Loop,
+    Pub,
+    Region,
+    Repeat,
+    Return,
+    Ram,
+    Rom,
+    Sizeof,
+    Struct,
+    Unit,
+    Var,
+    While,
 }
 
 pub fn find_keyword(id: &str) -> Option<Token> {
     match id {
-        "bitvec"    => Some(TokBitvec),
-        "break"     => Some(TokBreak),
-        "case"      => Some(TokCase),
-        "const"     => Some(TokConst),
-        "continue"  => Some(TokContinue),
-        "default"   => Some(TokDefault),
-        "else"      => Some(TokElse),
-        "for"       => Some(TokFor),
-        "fn"        => Some(TokFn),
-        "if"        => Some(TokIf),
-        "loop"      => Some(TokLoop),
-        "pub"       => Some(TokPub),
-        "region"    => Some(TokRegion),
-        "repeat"    => Some(TokRepeat),
-        "return"    => Some(TokReturn),
-        "ram"       => Some(TokRam),
-        "rom"       => Some(TokRom),
-        "sizeof"    => Some(TokSizeof),
-        "struct"    => Some(TokStruct),
-        "unit"      => Some(TokUnit),
-        "var"       => Some(TokVar),
-        "while"     => Some(TokWhile),
+        "bitvec"    => Some(Token::Bitvec),
+        "break"     => Some(Token::Break),
+        "case"      => Some(Token::Case),
+        "const"     => Some(Token::Const),
+        "continue"  => Some(Token::Continue),
+        "default"   => Some(Token::Default),
+        "else"      => Some(Token::Else),
+        "for"       => Some(Token::For),
+        "fn"        => Some(Token::Fn),
+        "if"        => Some(Token::If),
+        "loop"      => Some(Token::Loop),
+        "pub"       => Some(Token::Pub),
+        "region"    => Some(Token::Region),
+        "repeat"    => Some(Token::Repeat),
+        "return"    => Some(Token::Return),
+        "ram"       => Some(Token::Ram),
+        "rom"       => Some(Token::Rom),
+        "sizeof"    => Some(Token::Sizeof),
+        "struct"    => Some(Token::Struct),
+        "unit"      => Some(Token::Unit),
+        "var"       => Some(Token::Var),
+        "while"     => Some(Token::While),
         _           => None,
     }
 }
@@ -129,101 +129,101 @@ pub struct TokenAttr(&'static str, &'static str);
 impl Token {
     pub fn attrs(&self) -> TokenAttr {
         match *self {
-            TokIgnore =>        TokenAttr("TokIgnore", "TokIgnore"),
+            Token::Ignore =>        TokenAttr("Token::Ignore", "Token::Ignore"),
 
-            TokNumber(_) =>     TokenAttr("number literal", "(num)"),
-            TokIdentifier(_) => TokenAttr("identifier", "(id)"),
-            TokString(_) =>     TokenAttr("string literal", "(str)"),
-            TokCharacter(_) =>  TokenAttr("character literal", "(char)"),
+            Token::Number(_) =>     TokenAttr("number literal", "(num)"),
+            Token::Identifier(_) => TokenAttr("identifier", "(id)"),
+            Token::String(_) =>     TokenAttr("string literal", "(str)"),
+            Token::Character(_) =>  TokenAttr("character literal", "(char)"),
 
-            TokLParen =>        TokenAttr("'('",   "("),
-            TokRParen =>        TokenAttr("')'",   ")"),
-            TokLBrack =>        TokenAttr("'['",   "["),
-            TokRBrack =>        TokenAttr("']'",   "]"),
-            TokLBrace =>        TokenAttr("'{'",   "{"),
-            TokRBrace =>        TokenAttr("'}'",   "}"),
+            Token::LParen =>        TokenAttr("'('",   "("),
+            Token::RParen =>        TokenAttr("')'",   ")"),
+            Token::LBrack =>        TokenAttr("'['",   "["),
+            Token::RBrack =>        TokenAttr("']'",   "]"),
+            Token::LBrace =>        TokenAttr("'{'",   "{"),
+            Token::RBrace =>        TokenAttr("'}'",   "}"),
 
-            TokDot =>           TokenAttr("'.'",   "."),
-            TokComma =>         TokenAttr("','",   ","),
-            TokColon =>         TokenAttr("':'",   ":"),
-            TokSemicolon =>     TokenAttr("';'",   ";"),
-            TokQuestion =>      TokenAttr("'?'",   "?"),
+            Token::Dot =>           TokenAttr("'.'",   "."),
+            Token::Comma =>         TokenAttr("','",   ","),
+            Token::Colon =>         TokenAttr("':'",   ":"),
+            Token::Semicolon =>     TokenAttr("';'",   ";"),
+            Token::Question =>      TokenAttr("'?'",   "?"),
 
-            TokLArr =>          TokenAttr("'<-'",  "<-"),
-            TokRArr =>          TokenAttr("'->'",  "->"),
-            TokRDblArr =>       TokenAttr("'=>'",  "=>"),
+            Token::LArr =>          TokenAttr("'<-'",  "<-"),
+            Token::RArr =>          TokenAttr("'->'",  "->"),
+            Token::RDblArr =>       TokenAttr("'=>'",  "=>"),
 
-            TokPlus =>          TokenAttr("'+'",   "+"),
-            TokMinus =>         TokenAttr("'-'",   "-"),
-            TokStar =>          TokenAttr("'*'",   "*"),
-            TokSlash =>         TokenAttr("'/'",   "/"),
-            TokMod =>           TokenAttr("'%'",   "%"),
+            Token::Plus =>          TokenAttr("'+'",   "+"),
+            Token::Minus =>         TokenAttr("'-'",   "-"),
+            Token::Star =>          TokenAttr("'*'",   "*"),
+            Token::Slash =>         TokenAttr("'/'",   "/"),
+            Token::Mod =>           TokenAttr("'%'",   "%"),
 
-            TokBitNot =>        TokenAttr("'~'",   "~"),
-            TokBitAnd =>        TokenAttr("'&'",   "&"),
-            TokBitOr =>         TokenAttr("'|'",   "|"),
-            TokBitXor =>        TokenAttr("'^'",   "^"),
-            TokLShift =>        TokenAttr("'<<'",  "<<"),
-            TokRShift =>        TokenAttr("'>>'",  ">>"),
+            Token::BitNot =>        TokenAttr("'~'",   "~"),
+            Token::BitAnd =>        TokenAttr("'&'",   "&"),
+            Token::BitOr =>         TokenAttr("'|'",   "|"),
+            Token::BitXor =>        TokenAttr("'^'",   "^"),
+            Token::LShift =>        TokenAttr("'<<'",  "<<"),
+            Token::RShift =>        TokenAttr("'>>'",  ">>"),
 
-            TokIncr =>          TokenAttr("'++'",  "++"),
-            TokDecr =>          TokenAttr("'--'",  "--"),
+            Token::Incr =>          TokenAttr("'++'",  "++"),
+            Token::Decr =>          TokenAttr("'--'",  "--"),
 
-            TokBoolNot =>       TokenAttr("'!'",   "!"),
-            TokBoolAnd =>       TokenAttr("'&&'",  "&&"),
-            TokBoolOr =>        TokenAttr("'||'",  "||"),
+            Token::BoolNot =>       TokenAttr("'!'",   "!"),
+            Token::BoolAnd =>       TokenAttr("'&&'",  "&&"),
+            Token::BoolOr =>        TokenAttr("'||'",  "||"),
 
-            TokEq =>            TokenAttr("'=='",  "=="),
-            TokNotEq =>         TokenAttr("'!='",  "!="),
-            TokLess =>          TokenAttr("'<'",   "<"),
-            TokGreater =>       TokenAttr("'>'",   ">"),
-            TokLessEq =>        TokenAttr("'<='",  "<="),
-            TokGreaterEq =>     TokenAttr("'>='",  ">="),
+            Token::Eq =>            TokenAttr("'=='",  "=="),
+            Token::NotEq =>         TokenAttr("'!='",  "!="),
+            Token::Less =>          TokenAttr("'<'",   "<"),
+            Token::Greater =>       TokenAttr("'>'",   ">"),
+            Token::LessEq =>        TokenAttr("'<='",  "<="),
+            Token::GreaterEq =>     TokenAttr("'>='",  ">="),
 
-            TokAssign =>        TokenAttr("'='",   "="),
-            TokPlusEq =>        TokenAttr("'+='",  "+="),
-            TokMinusEq =>       TokenAttr("'-='",  "-="),
-            TokStarEq =>        TokenAttr("'*='",  "*="),
-            TokSlashEq =>       TokenAttr("'/='",  "/="),
-            TokModEq =>         TokenAttr("'%='",  "%="),
-            TokBitNotEq =>      TokenAttr("'~='",  "~="),
-            TokBitAndEq =>      TokenAttr("'&='",  "&="),
-            TokBitOrEq =>       TokenAttr("'|='",  "|="),
-            TokBitXorEq =>      TokenAttr("'^='",  "^="),
-            TokLShiftEq =>      TokenAttr("'<<='", "<<="),
-            TokRShiftEq =>      TokenAttr("'>>='", ">>="),
+            Token::Assign =>        TokenAttr("'='",   "="),
+            Token::PlusEq =>        TokenAttr("'+='",  "+="),
+            Token::MinusEq =>       TokenAttr("'-='",  "-="),
+            Token::StarEq =>        TokenAttr("'*='",  "*="),
+            Token::SlashEq =>       TokenAttr("'/='",  "/="),
+            Token::ModEq =>         TokenAttr("'%='",  "%="),
+            Token::BitNotEq =>      TokenAttr("'~='",  "~="),
+            Token::BitAndEq =>      TokenAttr("'&='",  "&="),
+            Token::BitOrEq =>       TokenAttr("'|='",  "|="),
+            Token::BitXorEq =>      TokenAttr("'^='",  "^="),
+            Token::LShiftEq =>      TokenAttr("'<<='", "<<="),
+            Token::RShiftEq =>      TokenAttr("'>>='", ">>="),
 
-            TokBitvec =>        TokenAttr("'bitvec'", "bitvec"),
-            TokBreak =>         TokenAttr("'break'", "break"),
-            TokCase =>          TokenAttr("'case'", "case"),
-            TokConst =>         TokenAttr("'const'", "const"),
-            TokContinue =>      TokenAttr("'continue'", "continue"),
-            TokDefault =>       TokenAttr("'default'", "default"),
-            TokElse =>          TokenAttr("'else'", "else"),
-            TokFor =>           TokenAttr("'for'", "for"),
-            TokFn =>            TokenAttr("'fn'", "fn"),
-            TokIf =>            TokenAttr("'if'", "if"),
-            TokLoop =>          TokenAttr("'loop'", "loop"),
-            TokPub =>           TokenAttr("'pub'", "pub"),
-            TokRegion =>        TokenAttr("'region'", "region"),
-            TokRepeat =>        TokenAttr("'repeat'", "repeat"),
-            TokReturn =>        TokenAttr("'return'", "return"),
-            TokRam =>           TokenAttr("'ram'", "ram"),
-            TokRom =>           TokenAttr("'rom'", "rom"),
-            TokSizeof =>        TokenAttr("'sizeof'", "sizeof"),
-            TokStruct =>        TokenAttr("'struct'", "struct"),
-            TokUnit =>          TokenAttr("'unit'", "unit"),
-            TokVar =>           TokenAttr("'var'", "var"),
-            TokWhile =>         TokenAttr("'while'", "while"),
+            Token::Bitvec =>        TokenAttr("'bitvec'", "bitvec"),
+            Token::Break =>         TokenAttr("'break'", "break"),
+            Token::Case =>          TokenAttr("'case'", "case"),
+            Token::Const =>         TokenAttr("'const'", "const"),
+            Token::Continue =>      TokenAttr("'continue'", "continue"),
+            Token::Default =>       TokenAttr("'default'", "default"),
+            Token::Else =>          TokenAttr("'else'", "else"),
+            Token::For =>           TokenAttr("'for'", "for"),
+            Token::Fn =>            TokenAttr("'fn'", "fn"),
+            Token::If =>            TokenAttr("'if'", "if"),
+            Token::Loop =>          TokenAttr("'loop'", "loop"),
+            Token::Pub =>           TokenAttr("'pub'", "pub"),
+            Token::Region =>        TokenAttr("'region'", "region"),
+            Token::Repeat =>        TokenAttr("'repeat'", "repeat"),
+            Token::Return =>        TokenAttr("'return'", "return"),
+            Token::Ram =>           TokenAttr("'ram'", "ram"),
+            Token::Rom =>           TokenAttr("'rom'", "rom"),
+            Token::Sizeof =>        TokenAttr("'sizeof'", "sizeof"),
+            Token::Struct =>        TokenAttr("'struct'", "struct"),
+            Token::Unit =>          TokenAttr("'unit'", "unit"),
+            Token::Var =>           TokenAttr("'var'", "var"),
+            Token::While =>         TokenAttr("'while'", "while"),
         }
     }
 
     pub fn to_repr<'a>(&'a self) -> String {
         match *self {
-            TokNumber(x) => x.to_string(),
-            TokIdentifier(ref x) => x.clone(),
-            TokString(ref x) => format!("\"{}\"", escape_str(x.as_slice())),
-            TokCharacter(x) => format!("'{}'", escape_char(x)),
+            Token::Number(x) => x.to_string(),
+            Token::Identifier(ref x) => x.clone(),
+            Token::String(ref x) => format!("\"{}\"", escape_str(x.as_slice())),
+            Token::Character(x) => format!("'{}'", escape_char(x)),
             _ => match self.attrs() { TokenAttr(_, x) => String::from_str(x) }
         }
     }
@@ -231,12 +231,12 @@ impl Token {
 
 fn escape_char(c: char) -> String {
     let mut s = String::new();
-    c.escape_default(|x| { s.push(x) });
+    c.escape_default();
     return s
 }
 
 fn escape_str(s: &str) -> String {
     let mut t = String::new();
-    for c in s.chars() { c.escape_default(|x| { t.push(x) }); }
+    for c in s.chars() { c.escape_default(); }
     return t;
 }

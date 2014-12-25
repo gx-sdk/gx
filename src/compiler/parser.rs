@@ -23,7 +23,7 @@ impl <It: Iterator<Token>> Parser<It> {
             Some(t) => t,
             None => match self.input.next() {
                 Some(t) => t,
-                None => Token::TokIgnore,
+                None => Token::Ignore,
             }
         }
     }

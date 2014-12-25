@@ -1,5 +1,4 @@
 #![feature(globs)]
-#![feature(struct_variant)]
 
 pub mod compiler;
 
@@ -11,9 +10,9 @@ mod driver {
     use compiler::lexer;
     use compiler::parser;
 
-    fn parse<B: Buffer>(mut f: B) -> StatementList {
+    /*fn parse<B: Buffer>(mut f: B) -> StatementList {
         parser::Parser::new(lexer::Lexer::new(f.chars())).stmt_list()
-    }
+    }*/
 
     pub fn main() {
         /*
@@ -31,7 +30,7 @@ mod driver {
         */
 
         /* read a statement list from the stream */
-        let st = parse(stdin());
+        /*let st = parse(stdin());*/
     }
 
 }

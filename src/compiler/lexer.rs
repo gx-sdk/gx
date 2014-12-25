@@ -125,7 +125,7 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
             };
 
         match FromStrRadix::from_str_radix(num, base) {
-            Some(x) => Some(TokNumber(x)),
+            Some(x) => Some(Token::Number(x)),
             None => self.die(
                 format!("invalid base {} constant {}", base, s).as_slice()
                 )
@@ -137,7 +137,7 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
 
         match find_keyword(s.as_slice()) {
             Some(tok) => Some(tok),
-            None      => Some(TokIdentifier(s)),
+            None      => Some(Token::Identifier(s)),
         }
     }
 
@@ -150,7 +150,7 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
                 'x' => {
                     let u = self.getc_or_die();
                     let v = self.getc_or_die();
-                    let string = String::from_chars([u, v]);
+                    let string = String::from_chars(&[u, v]);
                     let res: Option<u8> = FromStrRadix::from_str_radix(&*string, 16);
                     match res {
                         Some(x) => x as char,
@@ -181,14 +181,14 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
             }
         }
 
-        Some(TokString(s))
+        Some(Token::String(s))
     }
 
     fn read_char(&mut self) -> Option<Token> {
         let c = self.read_char_expr();
 
         match self.getc() {
-            Some('\'') => Some(TokCharacter(c)),
+            Some('\'') => Some(Token::Character(c)),
             _ => self.die("invalid character constant")
         }
     }
@@ -200,7 +200,7 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
         };
 
         return if is_whitespace(c) {
-            Some(TokIgnore)
+            Some(Token::Ignore)
 
         } else if is_digit(c) {
             self.ungetc(c);
@@ -212,45 +212,45 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
 
         } else { match c {
             '-' => match self.getc_or_zero() {
-                '>' => Some(TokRArr),
-                '=' => Some(TokMinusEq),
-                '-' => Some(TokDecr),
-                d   => { self.ungetc(d); Some(TokMinus) }
+                '>' => Some(Token::RArr),
+                '=' => Some(Token::MinusEq),
+                '-' => Some(Token::Decr),
+                d   => { self.ungetc(d); Some(Token::Minus) }
             },
 
             '+' => match self.getc_or_zero() {
-                '+' => Some(TokIncr),
-                '=' => Some(TokPlusEq),
-                d   => { self.ungetc(d); Some(TokPlus) }
+                '+' => Some(Token::Incr),
+                '=' => Some(Token::PlusEq),
+                d   => { self.ungetc(d); Some(Token::Plus) }
             },
 
-            '(' => Some(TokLParen),
-            ')' => Some(TokRParen),
-            '[' => Some(TokLBrack),
-            ']' => Some(TokRBrack),
-            '{' => Some(TokLBrace),
-            '}' => Some(TokRBrace),
+            '(' => Some(Token::LParen),
+            ')' => Some(Token::RParen),
+            '[' => Some(Token::LBrack),
+            ']' => Some(Token::RBrack),
+            '{' => Some(Token::LBrace),
+            '}' => Some(Token::RBrace),
 
-            '.' => Some(TokDot),
-            ',' => Some(TokComma),
-            ':' => Some(TokColon),
-            ';' => Some(TokSemicolon),
-            '?' => Some(TokQuestion),
+            '.' => Some(Token::Dot),
+            ',' => Some(Token::Comma),
+            ':' => Some(Token::Colon),
+            ';' => Some(Token::Semicolon),
+            '?' => Some(Token::Question),
 
             '=' => match self.getc_or_zero() {
-                '=' => Some(TokEq),
-                '>' => Some(TokRDblArr),
-                d   => { self.ungetc(d); Some(TokAssign) }
+                '=' => Some(Token::Eq),
+                '>' => Some(Token::RDblArr),
+                d   => { self.ungetc(d); Some(Token::Assign) }
             },
 
             '*' => match self.getc_or_zero() {
-                '=' => Some(TokStarEq),
-                d   => { self.ungetc(d); Some(TokStar) }
+                '=' => Some(Token::StarEq),
+                d   => { self.ungetc(d); Some(Token::Star) }
             },
             '/' => match self.getc_or_zero() {
                 '/' => {
                     self.getc_while(|c| { c != '\n' });
-                    Some(TokIgnore)
+                    Some(Token::Ignore)
                 },
                 '*' => {
                     loop {
@@ -262,62 +262,62 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
                             None => self.die("unexpected end of file"),
                         }
                     }
-                    Some(TokIgnore)
+                    Some(Token::Ignore)
                 },
-                '=' => Some(TokSlashEq),
-                d   => { self.ungetc(d); Some(TokSlash) }
+                '=' => Some(Token::SlashEq),
+                d   => { self.ungetc(d); Some(Token::Slash) }
             },
             '%' => match self.getc_or_zero() {
-                '=' => Some(TokModEq),
-                d   => { self.ungetc(d); Some(TokMod) }
+                '=' => Some(Token::ModEq),
+                d   => { self.ungetc(d); Some(Token::Mod) }
             },
 
             '~' => match self.getc_or_zero() {
-                '=' => Some(TokBitNotEq),
-                d   => { self.ungetc(d); Some(TokBitNot) }
+                '=' => Some(Token::BitNotEq),
+                d   => { self.ungetc(d); Some(Token::BitNot) }
             },
             '&' => match self.getc_or_zero() {
-                '&' => Some(TokBoolAnd),
-                '=' => Some(TokBitAndEq),
-                d   => { self.ungetc(d); Some(TokBitAnd) }
+                '&' => Some(Token::BoolAnd),
+                '=' => Some(Token::BitAndEq),
+                d   => { self.ungetc(d); Some(Token::BitAnd) }
             },
             '|' => match self.getc_or_zero() {
-                '|' => Some(TokBoolOr),
-                '=' => Some(TokBitOrEq),
-                d   => { self.ungetc(d); Some(TokBitOr) }
+                '|' => Some(Token::BoolOr),
+                '=' => Some(Token::BitOrEq),
+                d   => { self.ungetc(d); Some(Token::BitOr) }
             },
             '^' => match self.getc_or_zero() {
-                '=' => Some(TokBitXorEq),
-                d   => { self.ungetc(d); Some(TokBitXor) }
+                '=' => Some(Token::BitXorEq),
+                d   => { self.ungetc(d); Some(Token::BitXor) }
             },
 
             '<' => match self.getc_or_zero() {
-                '-' => Some(TokLArr),
-                '=' => Some(TokLessEq),
+                '-' => Some(Token::LArr),
+                '=' => Some(Token::LessEq),
                 '<' => match self.getc_or_zero() {
-                    '=' => Some(TokLShiftEq),
-                    e   => { self.ungetc(e); Some(TokLShift) },
+                    '=' => Some(Token::LShiftEq),
+                    e   => { self.ungetc(e); Some(Token::LShift) },
                 },
-                d   => { self.ungetc(d); Some(TokLess) }
+                d   => { self.ungetc(d); Some(Token::Less) }
             },
 
             '>' => match self.getc_or_zero() {
-                '=' => Some(TokGreaterEq),
+                '=' => Some(Token::GreaterEq),
                 '>' => match self.getc_or_zero() {
-                    '=' => Some(TokRShiftEq),
-                    e   => { self.ungetc(e); Some(TokRShift) },
+                    '=' => Some(Token::RShiftEq),
+                    e   => { self.ungetc(e); Some(Token::RShift) },
                 },
-                d   => { self.ungetc(d); Some(TokGreater) }
+                d   => { self.ungetc(d); Some(Token::Greater) }
             },
 
             '!' => match self.getc_or_zero() {
-                '=' => Some(TokNotEq),
-                d   => { self.ungetc(d); Some(TokBoolNot) }
+                '=' => Some(Token::NotEq),
+                d   => { self.ungetc(d); Some(Token::BoolNot) }
             },
 
             '#' => { /* to-eol comment, rofl */
                 self.getc_while(|c| { c != '\n' });
-                Some(TokIgnore)
+                Some(Token::Ignore)
             },
 
             '"' => self.read_string(),
@@ -332,7 +332,7 @@ impl <It: Iterator<IoResult<char>>> Iterator<Token> for Lexer<It> {
     fn next(&mut self) -> Option<Token> {
         loop {
             match self.try_token() {
-                Some(TokIgnore) => {}
+                Some(Token::Ignore) => {}
                 Some(x) => return Some(x),
                 None => return None
             }
