@@ -39,7 +39,7 @@ impl <It: Iterator<Token>> Parser<It> {
     /* expr  -> term
              -> term '+' expr
              -> term '-' expr */
-    pub fn expr(&mut self) -> Operand {
+    /*pub fn expr(&mut self) -> Operand {
         let opn0 = self.term();
 
         match self.gettok() {
@@ -48,12 +48,12 @@ impl <It: Iterator<Token>> Parser<It> {
 
             c => { self.untok(c); opn0 }
         }
-    }
+    }*/
 
     /* term  -> factor
              -> factor '*' term
              -> factor '/' term */
-    pub fn term(&mut self) -> Operand {
+    /*pub fn term(&mut self) -> Operand {
         let opn0 = self.factor();
 
         match self.gettok() {
@@ -62,12 +62,12 @@ impl <It: Iterator<Token>> Parser<It> {
 
             c => { self.untok(c); opn0 }
         }
-    }
+    }*/
 
     /* factor -> Number
               -> Identifier
               -> '(' expr ')' */
-    pub fn factor(&mut self) -> Operand {
+    /*pub fn factor(&mut self) -> Operand {
         match self.gettok() {
             Token::TokNumber(n) => Constant(n),
             Token::TokIdentifier(s) => Identifier(s),
@@ -79,11 +79,11 @@ impl <It: Iterator<Token>> Parser<It> {
 
             c => panic!("unexpected {}", c),
         }
-    }
+    }*/
 
     /* stmt-list -> \epsilon
                  -> stmt stmt-list */
-    pub fn stmt_list(&mut self) -> StatementList {
+    /*pub fn stmt_list(&mut self) -> StatementList {
         let mut stmts = Vec::new();
 
         loop {
@@ -101,12 +101,12 @@ impl <It: Iterator<Token>> Parser<It> {
                 },
             }
         }
-    }
+    }*/
 
     /* stmt -> 'print' expr ';'
             -> 'if' expr '{' stmt-list '}'
             -> Identifier '=' expr ';' */
-    pub fn stmt(&mut self) -> Statement {
+    /*pub fn stmt(&mut self) -> Statement {
         match self.gettok() {
             Token::TokIf => {
                 let ex = self.expr();
@@ -125,5 +125,5 @@ impl <It: Iterator<Token>> Parser<It> {
 
             c => panic!("expected 'if', 'print', or assignment, got {}", c),
         }
-    }
+    }*/
 }
