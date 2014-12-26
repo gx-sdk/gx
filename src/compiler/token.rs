@@ -10,6 +10,7 @@ pub enum Token {
     Identifier(String),
     String(String),
     Character(char),
+    BinaryString(String),
 
     /* glyphs */
 
@@ -91,6 +92,7 @@ pub enum Token {
     Rom,
     Sizeof,
     Struct,
+    Type,
     Unit,
     Var,
     While,
@@ -117,6 +119,7 @@ pub fn find_keyword(id: &str) -> Option<Token> {
         "rom"       => Some(Token::Rom),
         "sizeof"    => Some(Token::Sizeof),
         "struct"    => Some(Token::Struct),
+        "type"      => Some(Token::Type),
         "unit"      => Some(Token::Unit),
         "var"       => Some(Token::Var),
         "while"     => Some(Token::While),
@@ -212,6 +215,7 @@ impl Token {
             Token::Rom =>           TokenAttr("'rom'", "rom"),
             Token::Sizeof =>        TokenAttr("'sizeof'", "sizeof"),
             Token::Struct =>        TokenAttr("'struct'", "struct"),
+            Token::Type =>          TokenAttr("'type'", "type"),
             Token::Unit =>          TokenAttr("'unit'", "unit"),
             Token::Var =>           TokenAttr("'var'", "var"),
             Token::While =>         TokenAttr("'while'", "while"),

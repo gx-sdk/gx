@@ -3,11 +3,11 @@
 pub type Id = String;
 pub type Number = int;
 
-pub type Input = Vec<Box<Unit>>;
+pub type Input = Vec<Unit>;
 
 pub struct Unit {
     name:          Id,
-    decls:         Vec<Box<Decl>>
+    decls:         Vec<Decl>
 }
 
 pub struct Decl {

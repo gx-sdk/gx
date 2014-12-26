@@ -36,6 +36,225 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    fn peek(&mut self) -> Token {
+        let t = self.gettok();
+
+        self.untok(t);
+        return t;
+    }
+
+    pub fn id(&mut self) -> Id {
+        match self.gettok() {
+            Token::Identifier(x) => x,
+            _ => panic!("expected identifier"),
+        }
+    }
+
+    pub fn id_list(&mut self) -> Vec<Id> {
+        let mut v = Vec::new();
+
+        loop {
+            v.push(self.id());
+
+            match self.gettok() {
+                Token::Comma => { },
+                _ => return v
+            }
+        }
+    }
+
+    pub fn file(&mut self) -> Input {
+        let mut v = Vec::new();
+
+        loop {
+            match self.peek() {
+                Token::Unit  => v.append(self.unit()),
+                _            => return v,
+            }
+        }
+    }
+
+    pub fn unit(&mut self) -> Unit {
+        self.expect(Token::Unit);
+        let name = self.id();
+        self.expect(Token::LBrace);
+        let decls = self.decl_list();
+        self.expect(Token::RBrace);
+
+        Unit {
+            name:          name,
+            decls:         decls
+        }
+    }
+
+    pub fn decl_list(&mut self) -> Vec<Decl> {
+        let mut v = Vec::new();
+
+        loop {
+            match self.decl_o() {
+                Some(x)    => v.append(x),
+                _          => return v,
+            }
+        }
+    }
+
+    pub fn decl_o(&mut self) -> Option<Decl> {
+        match self.peek() {
+            Token::Pub     |
+            Token::Type    |
+            Token::Fn      |
+            Token::Var     |
+            Token::Const   |
+            Token::Region  =>
+                Some(self.decl()),
+            _ =>
+                None
+        }
+    }
+
+    pub fn decl(&mut self) -> Decl {
+        let is_pub = match self.gettok() {
+            Token::Pub     => true,
+            x              => { self.untok(x); false }
+        };
+
+        Decl {
+            is_pub:        is_pub,
+            body:          self.decl_body(),
+        }
+    }
+
+    pub fn decl_body(&mut self) -> DeclBody {
+        match self.peek() {
+            Token::Type    => DeclBody::Type      (self.type_decl()),
+            Token::Fn      => DeclBody::Func      (self.func_decl()),
+            Token::Var     => DeclBody::GlobalVar (self.global_var_decl()),
+            Token::Const   => DeclBody::Const     (self.const_decl()),
+            Token::Region  => DeclBody::Region    (self.region_decl()),
+            _              => panic!("expected declaration body!")
+        }
+    }
+
+    pub fn type_decl(&mut self) -> TypeDecl {
+        self.expect(Token::Type);
+        let name = self.id();
+        self.expect(Token::Colon);
+        let typ = self.type_spec();
+        self.expect(Token::Semicolon);
+
+        TypeDecl {
+            name:          name,
+            typ:           typ,
+        }
+    }
+
+    /* type-spec  -> id
+                  -> id '<' constant-list '>'
+                  -> '*' type-spec
+                  -> '[' number ']' type-spec
+                  -> struct-spec
+                  -> bitvec-spec */
+    pub fn type_spec(&mut self) -> TypeSpec {
+        match self.gettok() {
+            Token::Identifier(id) => {
+                match self.gettok() {
+                    Token::Less => {
+                        let x = TypeSpec::Parameterized(id, self.constant_list());
+                        self.expect(Token::Greater);
+                        x
+                    },
+
+                    x => {
+                        self.untok(x);
+                        TypeSpec::Alias(id)
+                    }
+                }
+            },
+
+            Token::Star => {
+                TypeSpec::Pointer(box self.type_spec())
+            },
+
+            Token::LBrack => {
+                let x = self.number();
+                self.expect(Token::RBrack);
+                TypeSpec::Array(x, box self.type_spec())
+            },
+
+            Token::Struct => {
+                self.untok(Token::Struct);
+                self.struct_spec()
+            },
+
+            Token::Bitvec => {
+                self.untok(Token::Bitvec);
+                self.bitvec_spec()
+            },
+        }
+    }
+
+    pub fn struct_spec(&mut self) -> TypeSpec {
+        self.expect(Token::Struct);
+        self.expect(Token::LBrack);
+
+        let body = Vec::new();
+
+        loop {
+            match self.var_decl_o() {
+                Some(x) => body.append(x),
+                None    => break,
+            }
+        }
+
+        self.expect(Token::RBrack);
+
+        TypeSpec::Struct(body)
+    }
+
+    pub fn bitvec_spec(&mut self) -> TypeSpec {
+        self.expect(Token::Bitvec);
+
+        let size = match self.peek() {
+            Token::Less => {
+                self.expect(Token::Less);
+                let n = self.number();
+                self.expect(Token::Greater);
+                Some(n)
+            },
+            _ => None,
+        };
+
+        self.expect(Token::LParen);
+
+        let body = Vec::new();
+
+        loop {
+            body.append(self.bitvec_member());
+
+            match self.gettok() {
+                Token::Comma  => { },
+                x             => self.untok(x),
+            }
+        }
+
+        self.expect(Token::RParen);
+
+        TypeSpec::Bitvec(size, body)
+    }
+
+    pub fn bitvec_member(&mut self) -> BitvecMember {
+        match self.peek() {
+            Token::Identifier(x) => {
+                self.expect(Token::Colon);
+                BitvecMember::Variable(x, self.number())
+            },
+
+            Token::BinaryString(x) => {
+                BitvecMember::Literal(x)
+            },
+        }
+    }
+
     /* expr  -> term
              -> term '+' expr
              -> term '-' expr */
