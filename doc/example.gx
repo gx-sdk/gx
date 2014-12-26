@@ -3,29 +3,29 @@ unit Invaders {
 	pub type Alien: struct {
 		flags: AlienFlags;
 
-		 x,  y: s16;
-		vx, vy: s16;
+		 x,  y: fixed<24, 8>;
+		vx, vy: fixed<24, 8>;
 	};
 
-	const ALIEN_SPEED: s16 = 20;
-	const ALIEN_GRAVITY: s16 = 2;
+	const ALIEN_SPEED:    fixed<24, 8> = 20;
+	const ALIEN_GRAVITY:  fixed<24, 8> =  2;
 
 	region(state, game) {
 		var aliens: [32]Alien;
 	}
 
-	var ram region(state, game) align(3) score: int;
+	var ram region(state, game) align(3) score: u16;
 
-	fn updateAlien(a: *Alien): void {
+	fn updateAlien(a: *Alien) {
 		if (a.flags.dead)
 			return;
 
-		a.x += a.vx;
-		a.y += a.vy;
-		a.vy += ALIEN_GRAVITY;
+		a.x   += a.vx;
+		a.y   += a.vy;
+		a.vy  += ALIEN_GRAVITY;
 	}
 
-	pub fn updateAllAliens(): void {
+	pub fn updateAllAliens() {
 		for (a in aliens)
 			updateAlien(a);
 	}
