@@ -72,7 +72,9 @@ I am writing a recursive descent parser by hand for this.
                      | \e
 
        <func-decl> ::= <func-heading> { <func-body> }
-    <func-heading> ::= fn <id> ( <func-params> ) : <type-spec>
+    <func-heading> ::= fn <id> ( <func-params> ) <func-return>
+     <func-return> ::= : <type-spec>
+                     | \e
      <func-params> ::= <func-params'>
                      | \e
     <func-params'> ::= <func-param> , <func-params'>

@@ -81,7 +81,7 @@ pub struct RegionName {
 pub struct FuncDecl {
     name:          Id,
     params:        Vec<FuncParam>,
-    ret:           TypeSpec,
+    ret:           Option<TypeSpec>,
     body:          Stmt,
 }
 pub struct FuncParam {
