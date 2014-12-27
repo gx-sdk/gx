@@ -6,13 +6,13 @@ pub type Number = int;
 pub type Input = Vec<Unit>;
 
 pub struct Unit {
-    name:          Id,
-    decls:         Vec<Decl>
+    pub name:      Id,
+    pub decls:     Vec<Decl>
 }
 
 pub struct Decl {
-    is_pub:        bool,
-    body:          DeclBody,
+    pub is_pub:    bool,
+    pub body:      DeclBody,
 }
 pub enum DeclBody {
     Type           (TypeDecl),
@@ -23,8 +23,8 @@ pub enum DeclBody {
 }
 
 pub struct TypeDecl {
-    name:          String,
-    typ:           TypeSpec
+    pub name:      String,
+    pub typ:       TypeSpec
 }
 
 pub enum TypeSpec {
@@ -41,12 +41,12 @@ pub enum BitvecMember {
 }
 
 pub struct GlobalVarDecl {
-    storage:       Storage,
-    decl:          VarDecl,
+    pub storage:   Storage,
+    pub decl:      VarDecl,
 }
 pub struct Storage {
-    loc:           StorageLoc,
-    params:        Vec<StorageParam>,
+    pub loc:       StorageLoc,
+    pub params:    Vec<StorageParam>,
 }
 pub enum StorageLoc {
     Default,
@@ -58,35 +58,35 @@ pub enum StorageParam {
     Ext            (Id, Vec<Expr>),
 }
 pub struct VarDecl {
-    ids:           Vec<Id>,
-    typ:           TypeSpec,
-    initializer:   Expr,
+    pub ids:       Vec<Id>,
+    pub typ:       TypeSpec,
+    pub init:      Expr,
 }
 
 pub struct ConstDecl {
-    id:            Id,
-    typ:           TypeSpec,
-    initializer:   Expr,
+    pub id:        Id,
+    pub typ:       TypeSpec,
+    pub init:      Expr,
 }
 
 pub struct RegionDecl {
-    name:          RegionName,
-    vars:          Vec<GlobalVarDecl>,
+    pub name:      RegionName,
+    pub vars:      Vec<GlobalVarDecl>,
 }
 pub struct RegionName {
-    section:       Id,
-    layer:         Id,
+    pub section:   Id,
+    pub layer:     Id,
 }
 
 pub struct FuncDecl {
-    name:          Id,
-    params:        Vec<FuncParam>,
-    ret:           Option<TypeSpec>,
-    body:          Stmt,
+    pub name:      Id,
+    pub params:    Vec<FuncParam>,
+    pub ret:       Option<TypeSpec>,
+    pub body:      Stmt,
 }
 pub struct FuncParam {
-    ids:           Vec<Id>,
-    typ:           TypeSpec,
+    pub ids:       Vec<Id>,
+    pub typ:       TypeSpec,
 }
 
 pub enum Stmt {
@@ -105,14 +105,14 @@ pub enum Stmt {
 }
 
 pub struct IfStmt {
-    cond:          Expr,
-    tb:            Box<Stmt>,
-    fb:            Option<Box<Stmt>>,
+    pub cond:      Expr,
+    pub tb:        Box<Stmt>,
+    pub fb:        Option<Box<Stmt>>,
 }
 
 pub struct SwitchStmt {
-    ex:            Expr,
-    cases:         Vec<SwitchCase>,
+    pub ex:        Expr,
+    pub cases:     Vec<SwitchCase>,
 }
 pub enum SwitchCase {
     Case           (Expr, Vec<Stmt>),
@@ -120,18 +120,18 @@ pub enum SwitchCase {
 }
 
 pub struct LoopStmt {
-    body:          Box<Stmt>
+    pub body:      Box<Stmt>
 }
 
 pub struct WhileStmt {
-    cond:          Expr,
-    body:          Box<Stmt>,
+    pub cond:      Expr,
+    pub body:      Box<Stmt>,
 }
 
 pub struct ForStmt {
-    id:            Id,
-    iter:          Expr,
-    body:          Box<Stmt>,
+    pub id:        Id,
+    pub iter:      Expr,
+    pub body:      Box<Stmt>,
 }
 
 pub enum Expr {

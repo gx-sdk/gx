@@ -36,11 +36,10 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    fn peek(&mut self) -> Token {
+    fn peek(&mut self) -> &Token {
         let t = self.gettok();
-
         self.untok(t);
-        return t;
+        return &self.ungot[self.ungot.len() - 1];
     }
 
     pub fn id(&mut self) -> Id {
@@ -50,14 +49,43 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    pub fn constant(&mut self) -> Expr {
+        match self.gettok() {
+            Token::Number(x) =>     Expr::Number(x as int),
+            Token::Character(x) =>  Expr::Number(x as int),
+            _ => panic!("expected constant"),
+        }
+    }
+
+    pub fn number(&mut self) -> Number {
+        match self.gettok() {
+            Token::Number(x) =>     x as int,
+            Token::Character(x) =>  x as int,
+            _ => panic!("expected number"),
+        }
+    }
+
     pub fn id_list(&mut self) -> Vec<Id> {
         let mut v = Vec::new();
 
         loop {
             v.push(self.id());
 
-            match self.gettok() {
-                Token::Comma => { },
+            match *self.peek() {
+                Token::Comma => { self.gettok(); },
+                _ => return v
+            }
+        }
+    }
+
+    pub fn constant_list(&mut self) -> Vec<Expr> {
+        let mut v = Vec::new();
+
+        loop {
+            v.push(self.constant());
+
+            match *self.peek() {
+                Token::Comma => { self.gettok(); },
                 _ => return v
             }
         }
@@ -67,9 +95,9 @@ impl <It: Iterator<Token>> Parser<It> {
         let mut v = Vec::new();
 
         loop {
-            match self.peek() {
-                Token::Unit  => v.append(self.unit()),
-                _            => return v,
+            match *self.peek() {
+                Token::Unit  => v.push(self.unit()),
+                _ => return v,
             }
         }
     }
@@ -92,14 +120,14 @@ impl <It: Iterator<Token>> Parser<It> {
 
         loop {
             match self.decl_o() {
-                Some(x)    => v.append(x),
+                Some(x)    => v.push(x),
                 _          => return v,
             }
         }
     }
 
     pub fn decl_o(&mut self) -> Option<Decl> {
-        match self.peek() {
+        match *self.peek() {
             Token::Pub     |
             Token::Type    |
             Token::Fn      |
@@ -125,13 +153,13 @@ impl <It: Iterator<Token>> Parser<It> {
     }
 
     pub fn decl_body(&mut self) -> DeclBody {
-        match self.peek() {
+        match *self.peek() {
             Token::Type    => DeclBody::Type      (self.type_decl()),
             Token::Fn      => DeclBody::Func      (self.func_decl()),
             Token::Var     => DeclBody::GlobalVar (self.global_var_decl()),
             Token::Const   => DeclBody::Const     (self.const_decl()),
             Token::Region  => DeclBody::Region    (self.region_decl()),
-            _              => panic!("expected declaration body!")
+            _ => panic!("expected declaration body!")
         }
     }
 
@@ -190,6 +218,8 @@ impl <It: Iterator<Token>> Parser<It> {
                 self.untok(Token::Bitvec);
                 self.bitvec_spec()
             },
+
+            _ => panic!("expected type specifier"),
         }
     }
 
@@ -197,11 +227,11 @@ impl <It: Iterator<Token>> Parser<It> {
         self.expect(Token::Struct);
         self.expect(Token::LBrack);
 
-        let body = Vec::new();
+        let mut body = Vec::new();
 
         loop {
             match self.var_decl_o() {
-                Some(x) => body.append(x),
+                Some(x) => body.push(x),
                 None    => break,
             }
         }
@@ -214,7 +244,7 @@ impl <It: Iterator<Token>> Parser<It> {
     pub fn bitvec_spec(&mut self) -> TypeSpec {
         self.expect(Token::Bitvec);
 
-        let size = match self.peek() {
+        let size = match *self.peek() {
             Token::Less => {
                 self.expect(Token::Less);
                 let n = self.number();
@@ -226,10 +256,10 @@ impl <It: Iterator<Token>> Parser<It> {
 
         self.expect(Token::LParen);
 
-        let body = Vec::new();
+        let mut body = Vec::new();
 
         loop {
-            body.append(self.bitvec_member());
+            body.push(self.bitvec_member());
 
             match self.gettok() {
                 Token::Comma  => { },
@@ -243,17 +273,42 @@ impl <It: Iterator<Token>> Parser<It> {
     }
 
     pub fn bitvec_member(&mut self) -> BitvecMember {
-        match self.peek() {
+        match self.gettok() {
             Token::Identifier(x) => {
                 self.expect(Token::Colon);
                 BitvecMember::Variable(x, self.number())
             },
 
             Token::BinaryString(x) => {
-                BitvecMember::Literal(x)
+                /* TODO: binary string bitvec members */
+                BitvecMember::Literal(0)
             },
+
+            _ => panic!("expected bitvec member"),
+
         }
     }
+
+    pub fn func_decl(&mut self) -> FuncDecl {
+        panic!("not yet implemented") // TODO
+    }
+
+    pub fn global_var_decl(&mut self) -> GlobalVarDecl {
+        panic!("not yet implemented") // TODO
+    }
+
+    pub fn const_decl(&mut self) -> ConstDecl {
+        panic!("not yet implemented") // TODO
+    }
+
+    pub fn region_decl(&mut self) -> RegionDecl {
+        panic!("not yet implemented") // TODO
+    }
+
+    pub fn var_decl_o(&mut self) -> Option<VarDecl> {
+        None // TODO
+    }
+
 
     /* expr  -> term
              -> term '+' expr
