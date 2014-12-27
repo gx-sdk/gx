@@ -1,0 +1,13 @@
+unit TypesExample {
+	type BitvecTest:         bitvec     (a:1, b:3, c:6);
+	type BitvecWithSize:     bitvec<32> (a:1, b:3, c:6);
+
+	type SomePointer:        *u8;
+	type SomeArray:          [3]u16;
+	type PointerToPointer:   **u32;
+	type ArrayOfPointer:     [4]*u8;
+	type PointerToArray:     *[4]u8;
+
+	type BinaryCodedDecimal: bcd<4>;
+	type FixedPoint:         fixed<8,8>;
+}
