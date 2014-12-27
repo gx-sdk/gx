@@ -53,7 +53,6 @@ I am writing a recursive descent parser by hand for this.
 
  <global-var-decl> ::= var <storage> <var-decl>
          <storage> ::= <storage-loc> <storage-params>
-                     | \e
      <storage-loc> ::= ram
                      | rom
                      | \e

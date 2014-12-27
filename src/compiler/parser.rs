@@ -289,24 +289,138 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    pub fn global_var_decl_o(&mut self) -> Option<GlobalVarDecl> {
+        match *self.peek() {
+            Token::Var  => Some(self.global_var_decl()),
+            _           => None,
+        }
+    }
+
+    pub fn global_var_decl(&mut self) -> GlobalVarDecl {
+        self.expect(Token::Var);
+
+        GlobalVarDecl {
+            storage:   self.storage(),
+            decl:      self.var_decl(),
+        }
+    }
+
+    pub fn storage(&mut self) -> Storage {
+        Storage {
+            loc:       self.storage_loc(),
+            params:    self.storage_params(),
+        }
+    }
+
+    pub fn storage_loc(&mut self) -> StorageLoc {
+        match self.gettok() {
+            Token::Ram => StorageLoc::RAM,
+            Token::Rom => StorageLoc::ROM,
+            x => { self.untok(x); StorageLoc::Default },
+        }
+    }
+
+    pub fn storage_params(&mut self) -> Vec<StorageParam> {
+        let mut params = Vec::new();
+
+        loop {
+            match self.storage_param_o() {
+                Some(x)  => params.push(x),
+                None     => return params
+            }
+        }
+    }
+
+    pub fn storage_param_o(&mut self) -> Option<StorageParam> {
+        None
+    }
+
+    pub fn var_decl_o(&mut self) -> Option<VarDecl> {
+        match *self.peek() {
+            Token::Identifier(_)  => Some(self.var_decl()),
+            _                     => None
+        }
+    }
+
+    pub fn var_decl(&mut self) -> VarDecl {
+        let ids = self.id_list();
+        self.expect(Token::Colon);
+        let typ = self.type_spec();
+        let init = match self.gettok() {
+            Token::Semicolon => None,
+            Token::Eq => {
+                let x = Some(self.expr());
+                self.expect(Token::Semicolon);
+                x
+            },
+            x => panic!("expected = or ; got {}", x)
+        };
+
+        VarDecl {
+            ids:       ids,
+            typ:       typ,
+            init:      init,
+        }
+    }
+
+    pub fn const_decl(&mut self) -> ConstDecl {
+        self.expect(Token::Const);
+        let id = self.id();
+        self.expect(Token::Colon);
+        let typ = self.type_spec();
+        self.expect(Token::Eq);
+        let init = self.constant();
+        self.expect(Token::Semicolon);
+
+        ConstDecl {
+            id:        id,
+            typ:       typ,
+            init:      init
+        }
+    }
+
+    pub fn region_decl(&mut self) -> RegionDecl {
+        let name = self.region_name();
+        self.expect(Token::LBrace);
+        let vars = self.region_decl_body();
+        self.expect(Token::RBrace);
+
+        RegionDecl {
+            name:      name,
+            vars:      vars,
+        }
+    }
+
+    pub fn region_name(&mut self) -> RegionName {
+        self.expect(Token::Region);
+        self.expect(Token::LParen);
+        let section = self.id();
+        self.expect(Token::Comma);
+        let layer = self.id();
+        self.expect(Token::RParen);
+
+        RegionName {
+            section:   section,
+            layer:     layer
+        }
+    }
+
+    pub fn region_decl_body(&mut self) -> Vec<GlobalVarDecl> {
+        let mut body = Vec::new();
+
+        loop {
+            match self.global_var_decl_o() {
+                Some(x)  => body.push(x),
+                None     => return body,
+            }
+        }
+    }
+
     pub fn func_decl(&mut self) -> FuncDecl {
         panic!("not yet implemented") // TODO
     }
 
-    pub fn global_var_decl(&mut self) -> GlobalVarDecl {
-        panic!("not yet implemented") // TODO
+    pub fn expr(&mut self) -> Expr {
+        Expr::Number(0) // TODO
     }
-
-    pub fn const_decl(&mut self) -> ConstDecl {
-        panic!("not yet implemented") // TODO
-    }
-
-    pub fn region_decl(&mut self) -> RegionDecl {
-        panic!("not yet implemented") // TODO
-    }
-
-    pub fn var_decl_o(&mut self) -> Option<VarDecl> {
-        None // TODO
-    }
-
 }

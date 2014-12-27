@@ -60,7 +60,7 @@ pub enum StorageParam {
 pub struct VarDecl {
     pub ids:       Vec<Id>,
     pub typ:       TypeSpec,
-    pub init:      Expr,
+    pub init:      Option<Expr>,
 }
 
 pub struct ConstDecl {
