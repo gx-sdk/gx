@@ -6,13 +6,16 @@ mod driver {
     extern crate getopts;
 
     use std::io::stdin;
+    use std::io::Chars;
+    use std::io::BufferedReader;
+    use std::io::stdio::StdReader;
     use compiler::tree::*;
     use compiler::lexer;
     use compiler::parser;
 
-    /*fn parse<B: Buffer>(mut f: B) -> StatementList {
-        parser::Parser::new(lexer::Lexer::new(f.chars())).stmt_list()
-    }*/
+    fn parse(mut ch: Chars<BufferedReader<StdReader>>) -> Input {
+        parser::Parser::new(lexer::Lexer::new(ch)).file()
+    }
 
     pub fn main() {
         /*
@@ -29,8 +32,8 @@ mod driver {
         };
         */
 
-        /* read a statement list from the stream */
-        /*let st = parse(stdin());*/
+        /* read an Input from the stream */
+        let f = parse(stdin().lock().chars());
     }
 
 }
