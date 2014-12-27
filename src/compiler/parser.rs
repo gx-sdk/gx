@@ -225,7 +225,7 @@ impl <It: Iterator<Token>> Parser<It> {
 
     pub fn struct_spec(&mut self) -> TypeSpec {
         self.expect(Token::Struct);
-        self.expect(Token::LBrack);
+        self.expect(Token::LBrace);
 
         let mut body = Vec::new();
 
@@ -263,7 +263,7 @@ impl <It: Iterator<Token>> Parser<It> {
 
             match self.gettok() {
                 Token::Comma  => { },
-                x             => self.untok(x),
+                x             => { self.untok(x); break },
             }
         }
 
