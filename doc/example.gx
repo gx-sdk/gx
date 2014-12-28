@@ -14,7 +14,7 @@ unit Invaders {
 		var aliens: [32]Alien;
 	}
 
-	#var ram region(state, game) align(3) score: u16;
+	var ram region(state, game) align(3) score: u16;
 	var score: u16;
 
 	fn updateAlien(a: *Alien) {

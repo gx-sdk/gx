@@ -332,7 +332,7 @@ impl <It: Iterator<Token>> Parser<It> {
     }
 
     pub fn storage_param_o(&mut self) -> Option<StorageParam> {
-        None
+        None // TODO
     }
 
     pub fn var_decl_o(&mut self) -> Option<VarDecl> {
