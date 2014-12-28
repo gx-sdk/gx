@@ -174,7 +174,8 @@ I am writing a recursive descent parser by hand for this.
                      | & <ex-unary>
                      | sizeof <ex-unary>
                      | <ex-bottom>
-       <ex-bottom> ::= <ex-primary> ++
+       <ex-bottom> ::= <ex-primary>
+                     | <ex-primary> ++
                      | <ex-primary> --
                      | <ex-primary> ( <ex-list> )
                      | <ex-primary> [ <expr> ]

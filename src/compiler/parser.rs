@@ -657,6 +657,289 @@ impl <It: Iterator<Token>> Parser<It> {
     }
 
     pub fn expr(&mut self) -> Expr {
-        Expr::Number(0) // TODO
+        self.ex_comma()
+    }
+
+    pub fn ex_list(&mut self) -> Vec<Expr> {
+        let mut list = Vec::new();
+
+        loop {
+            /* this is awful, it's everything that can follow an ex-list,
+               and it stops if it sees that */
+            match *self.peek() {
+                Token::RParen => return list,
+                _ => { }
+            }
+
+            list.push(self.ex_assign());
+
+            match *self.peek() {
+                Token::Comma => { self.gettok(); },
+                _ => return list,
+            }
+        }
+    }
+
+    pub fn ex_comma(&mut self) -> Expr {
+        let left = self.ex_assign();
+
+        match *self.peek() {
+            Token::Comma => { },
+            _ => { return left }
+        }
+
+        let mut vec = Vec::new();
+        vec.push(left);
+
+        loop {
+            match self.gettok() {
+                Token::Comma => vec.push(self.ex_assign()),
+                x => { self.untok(x); return Expr::Comma(vec) }
+            }
+        }
+    }
+
+    pub fn ex_assign(&mut self) -> Expr {
+        let left = self.ex_tern();
+
+        let op = match *self.peek() {
+            Token::Assign    => BinOp::Eq,
+            Token::PlusEq    => BinOp::Add,
+            Token::MinusEq   => BinOp::Sub,
+            Token::StarEq    => BinOp::Mul,
+            Token::SlashEq   => BinOp::Div,
+            Token::ModEq     => BinOp::Mod,
+            Token::LShiftEq  => BinOp::LShift,
+            Token::RShiftEq  => BinOp::RShift,
+            Token::BitAndEq  => BinOp::BitAnd,
+            Token::BitXorEq  => BinOp::BitXor,
+            Token::BitOrEq   => BinOp::BitOr,
+            _ => return left,
+        };
+
+        self.gettok();
+
+        Expr::Assign(
+            box left,
+            box self.ex_assign(),
+            op
+        )
+    }
+
+    pub fn ex_tern(&mut self) -> Expr {
+        let left = self.ex_lor();
+
+        match *self.peek() {
+            Token::Question => { },
+            _ => return left,
+        }
+
+        self.expect(Token::Question);
+        let mid = self.ex_lor();
+        self.expect(Token::Colon);
+
+        Expr::Ternary(
+            box left,
+            box mid,
+            box self.ex_tern()
+        )
+    }
+
+    pub fn ex_lor(&mut self) -> Expr {
+        let left = self.ex_land();
+
+        match self.gettok() {
+            Token::DblPipe =>
+                Expr::Binary(BinOp::BoolOr, box left, box self.ex_lor()),
+            tok =>
+                { self.untok(tok); left }
+        }
+    }
+
+    pub fn ex_land(&mut self) -> Expr {
+        let left = self.ex_bor();
+
+        match self.gettok() {
+            Token::DblAmp =>
+                Expr::Binary(BinOp::BoolAnd, box left, box self.ex_land()),
+            tok =>
+                { self.untok(tok); left }
+        }
+    }
+
+    pub fn ex_bor(&mut self) -> Expr {
+        let left = self.ex_bxor();
+
+        match self.gettok() {
+            Token::Pipe =>
+                Expr::Binary(BinOp::BitOr, box left, box self.ex_bor()),
+            tok =>
+                { self.untok(tok); left }
+        }
+    }
+
+    pub fn ex_bxor(&mut self) -> Expr {
+        let left = self.ex_band();
+
+        match self.gettok() {
+            Token::Caret =>
+                Expr::Binary(BinOp::BitXor, box left, box self.ex_bxor()),
+            tok =>
+                { self.untok(tok); left }
+        }
+    }
+
+    pub fn ex_band(&mut self) -> Expr {
+        let left = self.ex_eq();
+
+        match self.gettok() {
+            Token::Amp =>
+                Expr::Binary(BinOp::BitAnd, box left, box self.ex_band()),
+            tok =>
+                { self.untok(tok); left }
+        }
+    }
+
+    pub fn ex_eq(&mut self) -> Expr {
+        let left = self.ex_cmp();
+
+        match self.gettok() {
+            Token::Eq =>
+                Expr::Binary(BinOp::Eq, box left, box self.ex_eq()),
+            Token::NotEq =>
+                Expr::Binary(BinOp::NotEq, box left, box self.ex_eq()),
+
+            tok =>
+                { self.untok(tok); left }
+        }
+    }
+
+    pub fn ex_cmp(&mut self) -> Expr {
+        let left = self.ex_shift();
+
+        match self.gettok() {
+            Token::Less =>
+                Expr::Binary(BinOp::Less, box left, box self.ex_cmp()),
+            Token::Greater =>
+                Expr::Binary(BinOp::Greater, box left, box self.ex_cmp()),
+            Token::LessEq =>
+                Expr::Binary(BinOp::LessEq, box left, box self.ex_cmp()),
+            Token::GreaterEq =>
+                Expr::Binary(BinOp::GreaterEq, box left, box self.ex_cmp()),
+
+            tok =>
+                { self.untok(tok); left }
+        }
+    }
+
+    pub fn ex_shift(&mut self) -> Expr {
+        let left = self.ex_add();
+
+        match self.gettok() {
+            Token::LShift =>
+                Expr::Binary(BinOp::LShift, box left, box self.ex_shift()),
+            Token::RShift =>
+                Expr::Binary(BinOp::RShift, box left, box self.ex_shift()),
+
+            tok =>
+                { self.untok(tok); left }
+        }
+    }
+
+    pub fn ex_add(&mut self) -> Expr {
+        let left = self.ex_mul();
+
+        match self.gettok() {
+            Token::Plus =>
+                Expr::Binary(BinOp::Add, box left, box self.ex_add()),
+            Token::Minus =>
+                Expr::Binary(BinOp::Sub, box left, box self.ex_add()),
+
+            tok =>
+                { self.untok(tok); left }
+        }
+    }
+
+    pub fn ex_mul(&mut self) -> Expr {
+        let left = self.ex_unary();
+
+        match self.gettok() {
+            Token::Star =>
+                Expr::Binary(BinOp::Mul, box left, box self.ex_mul()),
+            Token::Slash =>
+                Expr::Binary(BinOp::Div, box left, box self.ex_mul()),
+            Token::Mod =>
+                Expr::Binary(BinOp::Mod, box left, box self.ex_mul()),
+
+            tok =>
+                { self.untok(tok); left }
+        }
+    }
+
+    pub fn ex_unary(&mut self) -> Expr {
+        match self.gettok() {
+            Token::Incr =>
+                Expr::Unary(UnOp::PreIncr, box self.ex_unary()),
+            Token::Decr =>
+                Expr::Unary(UnOp::PreDecr, box self.ex_unary()),
+            Token::Excl =>
+                Expr::Unary(UnOp::BoolNot, box self.ex_unary()),
+            Token::Tilde =>
+                Expr::Unary(UnOp::BitNot, box self.ex_unary()),
+            Token::Star =>
+                Expr::Unary(UnOp::Deref, box self.ex_unary()),
+            Token::Amp =>
+                Expr::Unary(UnOp::AddrOf, box self.ex_unary()),
+            Token::Sizeof =>
+                Expr::Unary(UnOp::SizeOf, box self.ex_unary()),
+
+            tok =>
+                { self.untok(tok); self.ex_bottom() }
+        }
+    }
+
+    pub fn ex_bottom(&mut self) -> Expr {
+        let left = self.ex_primary();
+
+        match self.gettok() {
+            Token::Incr =>
+                Expr::Unary(UnOp::PostIncr, box left),
+            Token::Decr =>
+                Expr::Unary(UnOp::PostDecr, box left),
+            Token::LParen => {
+                let ex = Expr::Call(box left, self.ex_list());
+                self.expect(Token::RParen);
+                ex
+            },
+            Token::LBrack => {
+                let ex = Expr::Binary(BinOp::Element, box left, box self.expr());
+                self.expect(Token::RBrack);
+                ex
+            },
+            Token::Dot =>
+                Expr::Member(box left, self.id()),
+
+            tok =>
+                { self.untok(tok); left }
+        }
+    }
+
+    pub fn ex_primary(&mut self) -> Expr {
+        match *self.peek() {
+            Token::Identifier(_) =>
+                Expr::Id(self.id()),
+            Token::Number(x) =>
+                { self.gettok(); Expr::Number(x as int) }
+            Token::Character(x) =>
+                { self.gettok(); Expr::Number(x as int) }
+            Token::LParen => {
+                self.expect(Token::LParen);
+                let ex = self.expr();
+                self.expect(Token::RParen);
+                ex
+            }
+
+            _ => { panic!("expected expression") }
+        }
     }
 }
