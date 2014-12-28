@@ -925,15 +925,14 @@ impl <It: Iterator<Token>> Parser<It> {
     }
 
     pub fn ex_primary(&mut self) -> Expr {
-        match *self.peek() {
-            Token::Identifier(_) =>
-                Expr::Id(self.id()),
+        match self.gettok() {
+            Token::Identifier(x) =>
+                Expr::Id(x),
             Token::Number(x) =>
-                { self.gettok(); Expr::Number(x as int) }
+                Expr::Number(x as int),
             Token::Character(x) =>
-                { self.gettok(); Expr::Number(x as int) }
+                Expr::Number(x as int),
             Token::LParen => {
-                self.expect(Token::LParen);
                 let ex = self.expr();
                 self.expect(Token::RParen);
                 ex
