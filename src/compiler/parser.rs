@@ -423,9 +423,9 @@ impl <It: Iterator<Token>> Parser<It> {
         let params = self.func_params();
         self.expect(Token::RParen);
         let ret = self.func_return();
-        self.expect(Token::RBrace);
-        let body = self.stmt_list();
         self.expect(Token::LBrace);
+        let body = self.stmt_list();
+        self.expect(Token::RBrace);
 
         FuncDecl {
             name:      name,
@@ -519,14 +519,25 @@ impl <It: Iterator<Token>> Parser<It> {
                 }
             },
 
-            /* probably not great, but ok. */
-            Token::RBrace =>
-                None,
-            _ => {
+            /* everything an expr can start with. KEEP UPDATED! */
+            Token::Incr           |
+            Token::Decr           |
+            Token::Excl           |
+            Token::Tilde          |
+            Token::Star           |
+            Token::Amp            |
+            Token::Sizeof         |
+            Token::Identifier(_)  |
+            Token::Number(_)      |
+            Token::String(_)      |
+            Token::Character(_)   |
+            Token::LParen         => {
                 self.untok(tok);
                 let ex = self.expr();
                 self.stmt_simple_o(Stmt::Eval(ex))
-            }
+            },
+
+            _ => { self.untok(tok); None }
         }
     }
 
