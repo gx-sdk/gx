@@ -59,7 +59,6 @@ I am writing a recursive descent parser by hand for this.
   <storage-params> ::= <storage-param> <storage-params>
                      | \e
    <storage-param> ::= <region-name>
-                     | <id> ( <constant-list> )
         <var-decl> ::= <id-list> : <type-spec> ;
                      | <id> : <type-spec> = <expr> ;
 

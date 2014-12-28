@@ -332,7 +332,10 @@ impl <It: Iterator<Token>> Parser<It> {
     }
 
     pub fn storage_param_o(&mut self) -> Option<StorageParam> {
-        None // TODO
+        match *self.peek() {
+            Token::Region  => Some(StorageParam::Region(self.region_name())),
+            _              => None,
+        }
     }
 
     pub fn var_decl_o(&mut self) -> Option<VarDecl> {
