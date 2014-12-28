@@ -141,7 +141,6 @@ pub enum Expr {
     Binary         (BinOp, Box<Expr>, Box<Expr>),
     Unary          (UnOp, Box<Expr>),
     Call           (Box<Expr>, Vec<Expr>),
-    Member         (Box<Expr>, Id),
     Id             (Id),
     Number         (Number),
 }
@@ -159,6 +158,7 @@ pub enum BinOp {
     BoolAnd,
     BoolOr,
     Element,
+    Member,
     Eq,
     NotEq,
     Less,

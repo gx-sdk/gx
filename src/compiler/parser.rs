@@ -917,7 +917,7 @@ impl <It: Iterator<Token>> Parser<It> {
                 ex
             },
             Token::Dot =>
-                Expr::Member(box left, self.id()),
+                Expr::Binary(BinOp::Member, box left, box self.ex_bottom()),
 
             tok =>
                 { self.untok(tok); left }
