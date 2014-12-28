@@ -236,7 +236,7 @@ impl <It: Iterator<Token>> Parser<It> {
             }
         }
 
-        self.expect(Token::RBrack);
+        self.expect(Token::RBrace);
 
         TypeSpec::Struct(body)
     }
@@ -348,7 +348,7 @@ impl <It: Iterator<Token>> Parser<It> {
         let typ = self.type_spec();
         let init = match self.gettok() {
             Token::Semicolon => None,
-            Token::Eq => {
+            Token::Assign => {
                 let x = Some(self.expr());
                 self.expect(Token::Semicolon);
                 x
@@ -368,7 +368,7 @@ impl <It: Iterator<Token>> Parser<It> {
         let id = self.id();
         self.expect(Token::Colon);
         let typ = self.type_spec();
-        self.expect(Token::Eq);
+        self.expect(Token::Assign);
         let init = self.constant();
         self.expect(Token::Semicolon);
 
