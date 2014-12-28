@@ -1,0 +1,7 @@
+unit Functions {
+	fn one_thing(x: s16) { }
+
+	fn two_thing(x: s32): s32 { }
+
+	fn three_thing(): bitvec<8>(x:4, y:4) { }
+}
