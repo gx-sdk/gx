@@ -87,7 +87,7 @@ I am writing a recursive descent parser by hand for this.
 
             <stmt> ::= <expr> ;
                      | { <stmt-list> }
-                     | <var-decl>
+                     | var <var-decl>
                      | <if-stmt>
                      | <switch-stmt>
                      | <loop-stmt>

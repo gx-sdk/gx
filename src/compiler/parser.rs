@@ -417,7 +417,232 @@ impl <It: Iterator<Token>> Parser<It> {
     }
 
     pub fn func_decl(&mut self) -> FuncDecl {
-        panic!("not yet implemented") // TODO
+        self.expect(Token::Fn);
+        let name = self.id();
+        self.expect(Token::LParen);
+        let params = self.func_params();
+        self.expect(Token::RParen);
+        let ret = self.func_return();
+        self.expect(Token::RBrace);
+        let body = self.stmt_list();
+        self.expect(Token::LBrace);
+
+        FuncDecl {
+            name:      name,
+            params:    params,
+            ret:       ret,
+            body:      body
+        }
+    }
+
+    pub fn func_return(&mut self) -> Option<TypeSpec> {
+        match self.gettok() {
+            Token::Colon => Some(self.type_spec()),
+            x => { self.untok(x); None }
+        }
+    }
+
+    pub fn func_params(&mut self) -> Vec<FuncParam> {
+        let mut params = Vec::new();
+
+        loop {
+            match self.func_param_o() {
+                Some(x)  => params.push(x),
+                None     => return params
+            }
+
+            match self.gettok() {
+                Token::Comma   => { },
+                x              => { self.untok(x); return params; }
+            }
+        }
+    }
+
+    pub fn func_param_o(&mut self) -> Option<FuncParam> {
+        match *self.peek() {
+            Token::Identifier(_) => Some(self.func_param()),
+            _                    => None,
+        }
+    }
+
+    pub fn func_param(&mut self) -> FuncParam {
+        let ids = self.id_list();
+        self.expect(Token::Colon);
+
+        FuncParam {
+            ids:       ids,
+            typ:       self.type_spec(),
+        }
+    }
+
+    pub fn stmt_list(&mut self) -> Stmt {
+        let mut stmts = Vec::new();
+
+        loop {
+            match self.stmt_o() {
+                Some(x)  => stmts.push(x),
+                None     => return Stmt::Compound(stmts),
+            }
+        }
+    }
+
+    pub fn stmt_o(&mut self) -> Option<Stmt> {
+        let tok = self.gettok();
+
+        match tok {
+            Token::LBrace => {
+                let st = self.stmt_list();
+                self.expect(Token::RBrace);
+                Some(st)
+            },
+
+            Token::Var      => Some(Stmt::Var(self.var_decl())),
+
+            Token::If       => { self.untok(tok); Some(self.if_stmt()) },
+            Token::Switch   => { self.untok(tok); Some(self.switch_stmt()) },
+            Token::Loop     => { self.untok(tok); Some(self.loop_stmt()) },
+            Token::While    => { self.untok(tok); Some(self.while_stmt()) },
+            Token::For      => { self.untok(tok); Some(self.for_stmt()) },
+
+            Token::Break    => { self.stmt_simple_o(Stmt::Break) },
+            Token::Continue => { self.stmt_simple_o(Stmt::Continue) },
+            Token::Repeat   => { self.stmt_simple_o(Stmt::Repeat) },
+
+            Token::Return => {
+                match self.gettok() {
+                    Token::Semicolon => Some(Stmt::Return(None)),
+                    x => {
+                        self.untok(x);
+                        let ex = self.expr();
+                        self.stmt_simple_o(Stmt::Return(Some(ex)))
+                    }
+                }
+            },
+
+            /* probably not great, but ok. */
+            Token::RBrace =>
+                None,
+            _ => {
+                self.untok(tok);
+                let ex = self.expr();
+                self.stmt_simple_o(Stmt::Eval(ex))
+            }
+        }
+    }
+
+    pub fn stmt(&mut self) -> Stmt {
+        match self.stmt_o() {
+            Some(x)  => x,
+            None     => panic!("expected statement")
+        }
+    }
+
+    pub fn stmt_simple_o(&mut self, stmt: Stmt) -> Option<Stmt> {
+        self.expect(Token::Semicolon);
+        Some(stmt)
+    }
+
+    pub fn if_stmt(&mut self) -> Stmt {
+        self.expect(Token::If);
+        self.expect(Token::LParen);
+        let cond = self.expr();
+        self.expect(Token::RParen);
+        let tb = box self.stmt();
+        let fb = match self.gettok() {
+            Token::Else => Some(box self.stmt()),
+            x => { self.untok(x); None },
+        };
+
+        Stmt::If(IfStmt {
+            cond:      cond,
+            tb:        tb,
+            fb:        fb,
+        })
+    }
+
+    pub fn switch_stmt(&mut self) -> Stmt {
+        self.expect(Token::Switch);
+        self.expect(Token::LParen);
+        let ex = self.expr();
+        self.expect(Token::RParen);
+        self.expect(Token::LBrace);
+        let body = self.switch_body();
+        self.expect(Token::RBrace);
+
+        Stmt::Switch(SwitchStmt {
+            ex:        ex,
+            cases:     body,
+        })
+    }
+
+    pub fn switch_body(&mut self) -> Vec<SwitchCase> {
+        let mut body = Vec::new();
+
+        loop {
+            match self.switch_case_o() {
+                Some(x)  => body.push(x),
+                None     => return body
+            }
+        }
+    }
+
+    pub fn switch_case_o(&mut self) -> Option<SwitchCase> {
+        match *self.peek() {
+            Token::Case | Token::Default => Some(self.switch_case()),
+            _ => None,
+        }
+    }
+
+    pub fn switch_case(&mut self) -> SwitchCase {
+        match self.gettok() {
+            Token::Case => {
+                let c = self.constant();
+                self.expect(Token::Colon);
+                SwitchCase::Case(c, self.stmt_list())
+            },
+
+            Token::Default => {
+                self.expect(Token::Colon);
+                SwitchCase::Default(self.stmt_list())
+            },
+
+            _ => panic!("expected 'case' or 'default'"),
+        }
+    }
+
+    pub fn loop_stmt(&mut self) -> Stmt {
+        self.expect(Token::Loop);
+
+        Stmt::Loop(LoopStmt {
+            body:      box self.stmt()
+        })
+    }
+
+    pub fn while_stmt(&mut self) -> Stmt {
+        self.expect(Token::While);
+        self.expect(Token::LParen);
+        let cond = self.expr();
+        self.expect(Token::RParen);
+
+        Stmt::While(WhileStmt {
+            cond:      cond,
+            body:      box self.stmt(),
+        })
+    }
+
+    pub fn for_stmt(&mut self) -> Stmt {
+        self.expect(Token::For);
+        self.expect(Token::LParen);
+        let id = self.id();
+        self.expect(Token::In);
+        let iter = self.expr();
+        self.expect(Token::RParen);
+
+        Stmt::For(ForStmt {
+            id:        id,
+            iter:      iter,
+            body:      box self.stmt(),
+        })
     }
 
     pub fn expr(&mut self) -> Expr {

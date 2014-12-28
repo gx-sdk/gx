@@ -115,8 +115,8 @@ pub struct SwitchStmt {
     pub cases:     Vec<SwitchCase>,
 }
 pub enum SwitchCase {
-    Case           (Expr, Vec<Stmt>),
-    Default        (Vec<Stmt>),
+    Case           (Expr, Stmt),
+    Default        (Stmt),
 }
 
 pub struct LoopStmt {
