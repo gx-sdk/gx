@@ -1,6 +1,7 @@
 #![feature(globs)]
 
 pub mod frontend;
+pub mod semantic;
 
 mod driver {
     extern crate getopts;
@@ -12,6 +13,7 @@ mod driver {
     use frontend::tree::*;
     use frontend::lexer;
     use frontend::parser;
+    use semantic::types;
 
     fn parse(ch: Chars<BufferedReader<StdReader>>) -> Input {
         parser::Parser::new(lexer::Lexer::new(ch)).file()
