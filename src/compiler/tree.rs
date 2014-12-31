@@ -143,6 +143,7 @@ pub enum Expr {
     Binary         (BinOp, Box<Expr>, Box<Expr>),
     Unary          (UnOp, Box<Expr>),
     Call           (Box<Expr>, Vec<Expr>),
+    Member         (Box<Expr>, Id),
     Id             (Id),
     Number         (Number),
 }
@@ -161,7 +162,6 @@ pub enum BinOp {
     BoolAnd,
     BoolOr,
     Element,
-    Member,
     Eq,
     NotEq,
     Less,
@@ -201,8 +201,7 @@ impl BinOp {
             BinOp::BitXor      => "^",
             BinOp::BoolAnd     => "&&",
             BinOp::BoolOr      => "||",
-            BinOp::Element     => ".",
-            BinOp::Member      => "[]",
+            BinOp::Element     => "[]",
             BinOp::Eq          => "==",
             BinOp::NotEq       => "!=",
             BinOp::Less        => "<",
@@ -687,6 +686,13 @@ impl Expr {
                 }
                 d.pop();
             },
+
+            Expr::Member(box ref ex, ref id) => {
+                d.push_str("Expr::Member");
+                ex.dump(d);
+                d.put_ln(format!("member: {}", id));
+                d.pop();
+            }
 
             Expr::Id(ref nm) =>
                 d.put_ln(format!("Expr::Id({})", nm)),

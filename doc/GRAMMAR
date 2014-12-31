@@ -1,6 +1,11 @@
 A recursive descent grammar for the gx language. Because I am insane,
 I am writing a recursive descent parser by hand for this.
 
+If a rule uses '<<=' instead of '::=', it means that recursion is
+actually left-associative, even though the parse tree produced means
+right-associative. This file is a mess, I don't know what I was
+thinking...
+
 
               <id> ::= (identifier token)
    <binary-string> ::= (string of 0s and 1s)
@@ -137,31 +142,34 @@ I am writing a recursive descent parser by hand for this.
                      | <ex-tern> |= <ex-assign>
          <ex-tern> ::= <ex-lor>
                      | <ex-lor> ? <ex-lor> : <ex-tern>
-          <ex-lor> ::= <ex-land>
+          <ex-lor> <<= <ex-land>
                      | <ex-land> || <ex-lor>
-         <ex-land> ::= <ex-bor>
+         <ex-land> <<= <ex-bor>
                      | <ex-bor> && <ex-land>
-          <ex-bor> ::= <ex-bxor>
+          <ex-bor> <<= <ex-bxor>
                      | <ex-bxor> | <ex-bor>
-         <ex-bxor> ::= <ex-band>
+         <ex-bxor> <<= <ex-band>
                      | <ex-band> ^ <ex-bxor>
-         <ex-band> ::= <ex-eq>
+         <ex-band> <<= <ex-eq>
                      | <ex-eq> & <ex-band>
-           <ex-eq> ::= <ex-cmp>
+           <ex-eq> <<= <ex-cmp>
                      | <ex-cmp> == <ex-eq>
                      | <ex-cmp> != <ex-eq>
-          <ex-cmp> ::= <ex-shift>
+          <ex-cmp> <<= <ex-shift>
                      | <ex-shift> < <ex-cmp>
                      | <ex-shift> > <ex-cmp>
                      | <ex-shift> <= <ex-cmp>
                      | <ex-shift> >= <ex-cmp>
-        <ex-shift> ::= <ex-add>
+        <ex-shift> <<= <ex-add>
                      | <ex-add> << <ex-shift>
                      | <ex-add> >> <ex-shift>
-          <ex-add> ::= <ex-mul>
+          <ex-add> <<= <ex-mul>
                      | <ex-mul> + <ex-add>
                      | <ex-mul> - <ex-add>
-          <ex-mul> ::= <ex-unary> [ (*|/|%) <ex-unary> ... ]
+          <ex-mul> <<= <ex-unary>
+                     | <ex-unary> * <ex-mul>
+                     | <ex-unary> / <ex-mul>
+                     | <ex-unary> % <ex-mul>
         <ex-unary> ::= ++ <ex-unary>
                      | -- <ex-unary>
                      | ! <ex-unary>
@@ -170,7 +178,7 @@ I am writing a recursive descent parser by hand for this.
                      | & <ex-unary>
                      | sizeof <ex-unary>
                      | <ex-bottom>
-       <ex-bottom> ::= <ex-primary>
+       <ex-bottom> <<= <ex-primary>
                      | <ex-primary> ++
                      | <ex-primary> --
                      | <ex-primary> ( <ex-list> )
