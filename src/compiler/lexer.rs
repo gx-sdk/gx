@@ -28,7 +28,6 @@ pub struct Lexer<It> {
     input: It,
     ungot: Vec<char>,
     line_number: uint,
-    binary_strings: bool,
 }
 
 impl <It: Iterator<IoResult<char>>> Lexer<It> {
@@ -37,7 +36,6 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
             input: input,
             ungot: Vec::with_capacity(5),
             line_number: 1,
-            binary_strings: false,
         }
     }
 
@@ -112,13 +110,6 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
         let s = self.getc_while(|c| {
                 c.is_digit(16) || c == 'x' || c == 'X'
             });
-
-        if self.binary_strings {
-            let x: Option<uint> = FromStrRadix::from_str_radix(s.as_slice(), 2);
-            if x.is_some() {
-                return Some(Token::BinaryString(s));
-            }
-        }
 
         let (base, num) =
             if s.starts_with("0x") || s.starts_with("0X") {
@@ -330,10 +321,6 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
 
             _ => self.die(format!("lexer error: unexpected char {}", c).as_slice())
         } }
-    }
-
-    pub fn set_binary_strings(&mut self, bs: bool) {
-        self.binary_strings = bs;
     }
 }
 
