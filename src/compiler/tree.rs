@@ -575,13 +575,30 @@ impl IfStmt {
 
 impl SwitchStmt {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        d.push_str("SwitchStmt");
+        self.ex.dump(d);
+        for c in self.cases.iter() {
+            c.dump(d);
+        }
+        d.pop();
     }
 }
 
 impl SwitchCase {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        match *self {
+            SwitchCase::Case(ref x, ref st) => {
+                d.push_str("SwitchCase::Case");
+                x.dump(d);
+                st.dump(d);
+                d.pop();
+            },
+            SwitchCase::Default(ref st) => {
+                d.push_str("SwitchCase::Default");
+                st.dump(d);
+                d.pop();
+            },
+        }
     }
 }
 
@@ -604,7 +621,11 @@ impl WhileStmt {
 
 impl ForStmt {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        d.push_str("ForStmt");
+        d.put_ln(format!("id: {}", self.id));
+        self.iter.dump(d);
+        self.body.dump(d);
+        d.pop();
     }
 }
 
