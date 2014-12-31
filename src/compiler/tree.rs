@@ -36,7 +36,7 @@ pub enum TypeSpec {
     Bitvec         (Option<Number>, Vec<BitvecMember>),
 }
 pub enum BitvecMember {
-    Literal        (Number),
+    Literal        (uint, Number),
     Variable       (Id, Number),
 }
 
@@ -385,10 +385,10 @@ impl TypeSpec {
 impl BitvecMember {
     pub fn dump(&self, d: &mut DumpContext) {
         match *self {
-            BitvecMember::Literal(n) =>
-                d.put_ln(format!("literal {}", n)),
-            BitvecMember::Variable(ref x, y) =>
-                d.put_ln(format!("var {} : {}", x, y)),
+            BitvecMember::Literal(n, w) =>
+                d.put_ln(format!("{} : {}", n, w)),
+            BitvecMember::Variable(ref x, w) =>
+                d.put_ln(format!("{} : {}", x, w)),
         }
     }
 }

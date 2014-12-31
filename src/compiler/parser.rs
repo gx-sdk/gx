@@ -279,9 +279,9 @@ impl <It: Iterator<Token>> Parser<It> {
                 BitvecMember::Variable(x, self.number())
             },
 
-            Token::BinaryString(_) => {
-                /* TODO: binary string bitvec members */
-                BitvecMember::Literal(0)
+            Token::Number(x) => {
+                self.expect(Token::Colon);
+                BitvecMember::Literal(x, self.number())
             },
 
             _ => panic!("expected bitvec member"),

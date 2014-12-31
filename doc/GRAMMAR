@@ -8,7 +8,6 @@ thinking...
 
 
               <id> ::= (identifier token)
-   <binary-string> ::= (string of 0s and 1s)
           <number> ::= (any constant integer)
         <constant> ::= (any constant expression)
 
@@ -52,7 +51,7 @@ thinking...
                      | \e
      <bitvec-body> ::= <bitvec-member> , <bitvec-body>
                      | <bitvec-member>
-   <bitvec-member> ::= <binary-string>
+   <bitvec-member> ::= <number> : <number>
                      | <id> : <number>
 
 
