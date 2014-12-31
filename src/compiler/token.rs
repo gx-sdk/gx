@@ -241,13 +241,13 @@ impl Token {
 }
 
 fn escape_char(c: char) -> String {
-    let mut s = String::new();
+    let s = String::new();
     c.escape_default();
     return s
 }
 
 fn escape_str(s: &str) -> String {
-    let mut t = String::new();
+    let t = String::new();
     for c in s.chars() { c.escape_default(); }
     return t;
 }

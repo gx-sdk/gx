@@ -13,7 +13,7 @@ mod driver {
     use compiler::lexer;
     use compiler::parser;
 
-    fn parse(mut ch: Chars<BufferedReader<StdReader>>) -> Input {
+    fn parse(ch: Chars<BufferedReader<StdReader>>) -> Input {
         parser::Parser::new(lexer::Lexer::new(ch)).file()
     }
 

@@ -1,13 +1,9 @@
 use std::io::IoResult;
-use std::char::is_whitespace;
-use std::char::is_digit;
-use std::char::is_digit_radix;
-use std::char::is_alphanumeric;
 use std::num::FromStrRadix;
 
 use compiler::token::*;
 
-fn is_identifier_char(c: char) -> bool { is_alphanumeric(c) || c == '_' }
+fn is_identifier_char(c: char) -> bool { c.is_alphanumeric() || c == '_' }
 
 /* The Lexer struct is the gx-lang lexer implementation. It implements
    the Iterator trait, which yields a stream of tokens lexed out of
@@ -112,7 +108,7 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
 
     fn read_int(&mut self) -> Option<Token> {
         let s = self.getc_while(|c| {
-                is_digit_radix(c, 16) || c == 'x' || c == 'X'
+                c.is_digit(16) || c == 'x' || c == 'X'
             });
 
         let (base, num) =
@@ -199,10 +195,10 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
             None => return None
         };
 
-        return if is_whitespace(c) {
+        return if c.is_whitespace() {
             Some(Token::Ignore)
 
-        } else if is_digit(c) {
+        } else if c.is_digit(10) {
             self.ungetc(c);
             self.read_int()
 

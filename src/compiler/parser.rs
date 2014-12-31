@@ -279,7 +279,7 @@ impl <It: Iterator<Token>> Parser<It> {
                 BitvecMember::Variable(x, self.number())
             },
 
-            Token::BinaryString(x) => {
+            Token::BinaryString(_) => {
                 /* TODO: binary string bitvec members */
                 BitvecMember::Literal(0)
             },
