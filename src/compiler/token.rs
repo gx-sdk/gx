@@ -133,6 +133,9 @@ pub fn find_keyword(id: &str) -> Option<Token> {
 
 pub struct TokenAttr(&'static str, &'static str);
 
+impl Copy for TokenAttr {
+}
+
 impl Token {
     pub fn attrs(&self) -> TokenAttr {
         match *self {

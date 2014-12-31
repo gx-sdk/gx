@@ -53,6 +53,8 @@ pub enum StorageLoc {
     RAM,
     ROM,
 }
+impl Copy for StorageLoc {
+}
 pub enum StorageParam {
     Region         (RegionName),
     Ext            (Id, Vec<Expr>),
@@ -167,6 +169,8 @@ pub enum BinOp {
     LessEq,
     GreaterEq,
 }
+impl Copy for BinOp {
+}
 #[deriving(Show)]
 pub enum UnOp {
     PreIncr,
@@ -178,6 +182,8 @@ pub enum UnOp {
     SizeOf,
     BitNot,
     BoolNot,
+}
+impl Copy for UnOp {
 }
 
 impl BinOp {
@@ -210,6 +216,8 @@ impl BinOp {
 pub struct DumpContext {
     pub blank: bool,
     pub depth: int,
+}
+impl Copy for DumpContext {
 }
 
 impl DumpContext {
