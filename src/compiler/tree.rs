@@ -239,7 +239,7 @@ impl DumpContext {
     pub fn push(&mut self, s: String) {
         self.newline();
         self.put(s);
-        self.put(String::from_str("("));
+        self.put(String::from_str(":"));
         self.depth += 1;
     }
 
@@ -247,8 +247,6 @@ impl DumpContext {
         if self.depth > 0 {
             self.depth -= 1;
         }
-        self.newline();
-        self.put(String::from_str(")"));
     }
 
     pub fn put_ln_str(&mut self, s: &str) {
@@ -276,6 +274,7 @@ impl DumpContext {
 impl Unit {
     pub fn dump(&self, d: &mut DumpContext) {
         d.push_str("Unit");
+        d.put_ln(format!("name: {}", self.name));
         for decl in self.decls.iter() {
             decl.dump(d);
         }
@@ -389,73 +388,188 @@ impl BitvecMember {
 
 impl GlobalVarDecl {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        d.push_str("GlobalVarDecl");
+        self.storage.dump(d);
+        self.decl.dump(d);
+        d.pop();
     }
 }
 
 impl Storage {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        d.push_str("Storage");
+        self.loc.dump(d);
+        for p in self.params.iter() {
+            p.dump(d);
+        }
+        d.pop();
     }
 }
 
 impl StorageLoc {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        d.put_ln_str(match *self {
+            StorageLoc::Default => "StorageLoc::Default",
+            StorageLoc::RAM     => "StorageLoc::RAM",
+            StorageLoc::ROM     => "StorageLoc::ROM",
+        });
     }
 }
 
 impl StorageParam {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        match *self {
+            StorageParam::Region(ref nm) => {
+                d.push_str("StorageParam::Region");
+                nm.dump(d);
+                d.pop();
+            },
+            StorageParam::Ext(ref id, ref v) => {
+                d.push_str("StorageParam::Ext");
+                d.put_ln(format!("id: {}", id));
+                for ex in v.iter() {
+                    ex.dump(d);
+                }
+                d.pop();
+            },
+        }
     }
 }
 
 impl VarDecl {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        d.push_str("VarDecl");
+        if self.ids.len() == 1 {
+            d.put_ln(format!("id: {}", self.ids[0]));
+        } else {
+            d.push_str("ids");
+            for id in self.ids.iter() {
+                d.put_ln(id.clone());
+            }
+            d.pop();
+        }
+        self.typ.dump(d);
+        match self.init {
+            Some(ref x)  => x.dump(d),
+            None         => { },
+        }
+        d.pop();
     }
 }
 
 impl ConstDecl {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        d.push_str("ConstDecl");
+        d.put_ln(format!("id: {}", self.id));
+        self.typ.dump(d);
+        self.init.dump(d);
+        d.pop();
     }
 }
 
 impl RegionDecl {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        d.push_str("RegionDecl");
+        self.name.dump(d);
+        for v in self.vars.iter() {
+            v.dump(d);
+        }
+        d.pop();
     }
 }
 
 impl RegionName {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        d.put_ln(format!("region({}, {})", self.section, self.layer));
     }
 }
 
 impl FuncDecl {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        d.push_str("FuncDecl");
+        d.put_ln(self.name.clone());
+        for p in self.params.iter() {
+            p.dump(d);
+        }
+        match self.ret {
+            Some(ref t)  => t.dump(d),
+            None         => d.put_ln_str("(no return type)"),
+        }
+        self.body.dump(d);
+        d.pop();
     }
 }
 
 impl FuncParam {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        for id in self.ids.iter() {
+            d.push_str("FuncParam");
+            d.put_ln(format!("id: {}", id));
+            self.typ.dump(d);
+            d.pop();
+        }
     }
 }
 
 impl Stmt {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        match *self {
+            Stmt::Eval(ref ex) => {
+                d.push_str("Stmt::Eval");
+                ex.dump(d);
+                d.pop();
+            },
+            Stmt::Compound(ref v) => {
+                d.push_str("Stmt::Eval");
+                for st in v.iter() {
+                    st.dump(d);
+                }
+                d.pop();
+            },
+            Stmt::Var(ref decl) =>
+                decl.dump(d),
+            Stmt::If(ref f) =>
+                f.dump(d),
+            Stmt::Switch(ref s) =>
+                s.dump(d),
+            Stmt::Loop(ref l) =>
+                l.dump(d),
+            Stmt::While(ref w) =>
+                w.dump(d),
+            Stmt::For(ref f) =>
+                f.dump(d),
+            Stmt::Break =>
+                d.put_ln_str("Stmt::Break"),
+            Stmt::Continue =>
+                d.put_ln_str("Stmt::Continue"),
+            Stmt::Repeat =>
+                d.put_ln_str("Stmt::Repeat"),
+            Stmt::Return(ref t) => {
+                match *t {
+                    Some(ref ex) => {
+                        d.push_str("Stmt::Return");
+                        ex.dump(d);
+                        d.pop();
+                    },
+                    None => {
+                        d.put_ln_str("Stmt::Return");
+                    },
+                }
+            },
+        }
     }
 }
 
 impl IfStmt {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        d.push_str("IfStmt");
+        self.cond.dump(d);
+        self.tb.dump(d);
+        match self.fb {
+            Some(box ref st)  => st.dump(d),
+            None              => { },
+        }
+        d.pop();
     }
 }
 
@@ -473,13 +587,18 @@ impl SwitchCase {
 
 impl LoopStmt {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        d.push_str("LoopStmt");
+        self.body.dump(d);
+        d.pop();
     }
 }
 
 impl WhileStmt {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        d.push_str("WhileStmt");
+        self.cond.dump(d);
+        self.body.dump(d);
+        d.pop();
     }
 }
 
@@ -491,6 +610,60 @@ impl ForStmt {
 
 impl Expr {
     pub fn dump(&self, d: &mut DumpContext) {
-        d.put_ln_str("(not implemented)");
+        match *self {
+            Expr::Comma(ref v) => {
+                d.push_str("Expr::Comma");
+                for ex in v.iter() {
+                    ex.dump(d);
+                }
+                d.pop();
+            },
+
+            Expr::Assign(box ref to, box ref fr, ref op) => {
+                d.push_str("Expr::Assign");
+                to.dump(d);
+                fr.dump(d);
+                d.put_ln(format!("{}", op));
+                d.pop();
+            },
+
+            Expr::Ternary(box ref cond, box ref tb, box ref fb) => {
+                d.push_str("Expr::Ternary");
+                cond.dump(d);
+                tb.dump(d);
+                fb.dump(d);
+                d.pop();
+            },
+
+            Expr::Binary(ref op, box ref e1, box ref e2) => {
+                d.push_str("Expr::Binary");
+                d.put_ln(format!("{}", op));
+                e1.dump(d);
+                e2.dump(d);
+                d.pop();
+            },
+
+            Expr::Unary(ref op, box ref ex) => {
+                d.push_str("Expr::Unary");
+                d.put_ln(format!("{}", op));
+                ex.dump(d);
+                d.pop();
+            },
+
+            Expr::Call(box ref f, ref v) => {
+                d.push_str("Expr::Call");
+                f.dump(d);
+                for ex in v.iter() {
+                    ex.dump(d);
+                }
+                d.pop();
+            },
+
+            Expr::Id(ref nm) =>
+                d.put_ln(format!("Expr::Id({})", nm)),
+
+            Expr::Number(n) =>
+                d.put_ln(format!("Expr::Number({})", n)),
+        }
     }
 }
