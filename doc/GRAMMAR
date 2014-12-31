@@ -161,10 +161,7 @@ I am writing a recursive descent parser by hand for this.
           <ex-add> ::= <ex-mul>
                      | <ex-mul> + <ex-add>
                      | <ex-mul> - <ex-add>
-          <ex-mul> ::= <ex-unary>
-                     | <ex-unary> * <ex-mul>
-                     | <ex-unary> / <ex-mul>
-                     | <ex-unary> % <ex-mul>
+          <ex-mul> ::= <ex-unary> [ (*|/|%) <ex-unary> ... ]
         <ex-unary> ::= ++ <ex-unary>
                      | -- <ex-unary>
                      | ! <ex-unary>

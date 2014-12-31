@@ -864,18 +864,20 @@ impl <It: Iterator<Token>> Parser<It> {
     }
 
     pub fn ex_mul(&mut self) -> Expr {
-        let left = self.ex_unary();
+        let mut left = self.ex_unary();
 
-        match self.gettok() {
-            Token::Star =>
-                Expr::Binary(BinOp::Mul, box left, box self.ex_mul()),
-            Token::Slash =>
-                Expr::Binary(BinOp::Div, box left, box self.ex_mul()),
-            Token::Mod =>
-                Expr::Binary(BinOp::Mod, box left, box self.ex_mul()),
+        loop {
+            match self.gettok() {
+                Token::Star =>
+                    left = Expr::Binary(BinOp::Mul, box left, box self.ex_unary()),
+                Token::Slash =>
+                    left = Expr::Binary(BinOp::Div, box left, box self.ex_unary()),
+                Token::Mod =>
+                    left = Expr::Binary(BinOp::Mod, box left, box self.ex_unary()),
 
-            tok =>
-                { self.untok(tok); left }
+                tok =>
+                    { self.untok(tok); return left }
+            }
         }
     }
 
