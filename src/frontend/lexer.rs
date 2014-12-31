@@ -1,7 +1,7 @@
 use std::io::IoResult;
 use std::num::FromStrRadix;
 
-use compiler::token::*;
+use frontend::token::*;
 
 fn is_identifier_char(c: char) -> bool { c.is_alphanumeric() || c == '_' }
 

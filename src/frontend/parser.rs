@@ -1,5 +1,5 @@
-use compiler::token::Token;
-use compiler::tree::*;
+use frontend::token::Token;
+use frontend::tree::*;
 
 pub struct Parser<It> {
     input: It,

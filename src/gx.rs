@@ -1,6 +1,6 @@
 #![feature(globs)]
 
-pub mod compiler;
+pub mod frontend;
 
 mod driver {
     extern crate getopts;
@@ -9,9 +9,9 @@ mod driver {
     use std::io::Chars;
     use std::io::BufferedReader;
     use std::io::stdio::StdReader;
-    use compiler::tree::*;
-    use compiler::lexer;
-    use compiler::parser;
+    use frontend::tree::*;
+    use frontend::lexer;
+    use frontend::parser;
 
     fn parse(ch: Chars<BufferedReader<StdReader>>) -> Input {
         parser::Parser::new(lexer::Lexer::new(ch)).file()
