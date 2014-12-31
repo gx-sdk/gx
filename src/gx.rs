@@ -34,8 +34,11 @@ mod driver {
 
         /* read an Input from the stream */
         let f = parse(stdin().lock().chars());
-
-        let d = DumpContext::new();
+        let mut d = DumpContext::new();
+        for unit in f.iter() {
+            unit.dump(&mut d);
+        }
+        d.end();
     }
 
 }

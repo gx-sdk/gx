@@ -70,10 +70,7 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
     fn getc(&mut self) -> Option<char> {
         let c = self.real_getc();
         match c {
-            Some('\n') => {
-                self.line_number += 1;
-                println!("line {}", self.line_number);
-            }
+            Some('\n') => self.line_number += 1,
             _ => { }
         }
         c

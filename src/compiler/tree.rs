@@ -225,42 +225,272 @@ impl DumpContext {
             return;
         }
 
-        self.put("\n");
-        self.indent();
+        self.put(String::from_str("\n"));
+        for i in range(0, self.depth) {
+            print!("  ");
+        }
         self.blank = true;
     }
 
-    fn indent(&self) {
-        for i in range(0, self.depth) {
-            self.put("   ");
-        }
+    pub fn push_str(&mut self, s: &str) {
+        self.push(String::from_str(s));
     }
 
-    pub fn push(&mut self, s: &str) {
+    pub fn push(&mut self, s: String) {
         self.newline();
         self.put(s);
-        self.put("(");
-        self.newline();
-
+        self.put(String::from_str("("));
         self.depth += 1;
     }
 
     pub fn pop(&mut self) {
-        self.newline();
-        self.put(")");
-        self.newline();
-
         if self.depth > 0 {
             self.depth -= 1;
         }
+        self.newline();
+        self.put(String::from_str(")"));
     }
 
-    pub fn putln(&self, s: &str) {
+    pub fn put_ln_str(&mut self, s: &str) {
+        self.put_ln(String::from_str(s));
+    }
+
+    pub fn put_ln(&mut self, s: String) {
+        self.newline();
         self.put(s);
-        self.put("\n");
     }
 
-    fn put(&self, s: &str) {
+    fn put(&mut self, s: String) {
+        self.blank = false;
         print!("{}", s);
+    }
+
+    pub fn end(&mut self) {
+        if !self.blank {
+            print!("\n");
+        }
+        self.blank = true;
+    }
+}
+
+impl Unit {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.push_str("Unit");
+        for decl in self.decls.iter() {
+            decl.dump(d);
+        }
+        d.pop();
+    }
+}
+
+impl Decl {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.push_str("Decl");
+        d.put_ln(format!("pub: {}", self.is_pub));
+        self.body.dump(d);
+        d.pop();
+    }
+}
+
+impl DeclBody {
+    pub fn dump(&self, d: &mut DumpContext) {
+        match *self {
+            DeclBody::Type(ref x) => {
+                d.push_str("DeclBody::Type");
+                x.dump(d);
+            },
+            DeclBody::Func(ref x) => {
+                d.push_str("DeclBody::Func");
+                x.dump(d);
+            },
+            DeclBody::GlobalVar(ref x) => {
+                d.push_str("DeclBody::GlobalVar");
+                x.dump(d);
+            },
+            DeclBody::Const(ref x) => {
+                d.push_str("DeclBody::Const");
+                x.dump(d);
+            },
+            DeclBody::Region(ref x) => {
+                d.push_str("DeclBody::Region");
+                x.dump(d);
+            },
+        };
+        d.pop();
+    }
+}
+
+impl TypeDecl {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.push_str("TypeDecl");
+        d.put_ln(format!("name: {}", self.name));
+        self.typ.dump(d);
+        d.pop();
+    }
+}
+
+impl TypeSpec {
+    pub fn dump(&self, d: &mut DumpContext) {
+        match *self {
+            TypeSpec::Alias(ref x) => {
+                d.put_ln(format!("TypeSpec::Alias({})", x));
+            },
+            TypeSpec::Parameterized(ref x, ref y) => {
+                d.push_str("TypeSpec::Parameterized");
+                d.put_ln(format!("id: {}", x));
+                for t in y.iter() {
+                    t.dump(d);
+                }
+                d.pop();
+            },
+            TypeSpec::Pointer(box ref x) => {
+                d.push_str("TypeSpec::Pointer");
+                x.dump(d);
+                d.pop();
+            },
+            TypeSpec::Array(n, box ref t) => {
+                d.push_str("TypeSpec::Array");
+                d.put_ln(format!("size: {}", n));
+                t.dump(d);
+                d.pop();
+            },
+            TypeSpec::Struct(ref x) => {
+                d.push_str("TypeSpec::Struct");
+                for t in x.iter() {
+                    t.dump(d);
+                }
+                d.pop();
+            },
+            TypeSpec::Bitvec(ref x, ref y) => {
+                d.push_str("TypeSpec::Bitvec");
+                match *x {
+                    Some(n)  => d.put_ln(format!("size: {}", n)),
+                    None     => d.put_ln_str("size: auto"),
+                }
+                for t in y.iter() {
+                    t.dump(d);
+                }
+                d.pop();
+            },
+        }
+    }
+}
+
+impl BitvecMember {
+    pub fn dump(&self, d: &mut DumpContext) {
+        match *self {
+            BitvecMember::Literal(n) =>
+                d.put_ln(format!("literal {}", n)),
+            BitvecMember::Variable(ref x, y) =>
+                d.put_ln(format!("var {} : {}", x, y)),
+        }
+    }
+}
+
+impl GlobalVarDecl {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
+    }
+}
+
+impl Storage {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
+    }
+}
+
+impl StorageLoc {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
+    }
+}
+
+impl StorageParam {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
+    }
+}
+
+impl VarDecl {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
+    }
+}
+
+impl ConstDecl {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
+    }
+}
+
+impl RegionDecl {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
+    }
+}
+
+impl RegionName {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
+    }
+}
+
+impl FuncDecl {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
+    }
+}
+
+impl FuncParam {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
+    }
+}
+
+impl Stmt {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
+    }
+}
+
+impl IfStmt {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
+    }
+}
+
+impl SwitchStmt {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
+    }
+}
+
+impl SwitchCase {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
+    }
+}
+
+impl LoopStmt {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
+    }
+}
+
+impl WhileStmt {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
+    }
+}
+
+impl ForStmt {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
+    }
+}
+
+impl Expr {
+    pub fn dump(&self, d: &mut DumpContext) {
+        d.put_ln_str("(not implemented)");
     }
 }
