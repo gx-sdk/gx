@@ -34,6 +34,8 @@ mod driver {
 
         /* read an Input from the stream */
         let f = parse(stdin().lock().chars());
+
+        let d = DumpContext::new();
     }
 
 }

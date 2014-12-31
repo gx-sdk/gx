@@ -144,6 +144,7 @@ pub enum Expr {
     Id             (Id),
     Number         (Number),
 }
+#[deriving(Show)]
 pub enum BinOp {
     Add,
     Sub,
@@ -166,6 +167,7 @@ pub enum BinOp {
     LessEq,
     GreaterEq,
 }
+#[deriving(Show)]
 pub enum UnOp {
     PreIncr,
     PostIncr,
@@ -176,4 +178,89 @@ pub enum UnOp {
     SizeOf,
     BitNot,
     BoolNot,
+}
+
+impl BinOp {
+    pub fn glyph(&self) -> &'static str {
+        match *self {
+            BinOp::Add         => "+",
+            BinOp::Sub         => "-",
+            BinOp::Mul         => "*",
+            BinOp::Div         => "/",
+            BinOp::Mod         => "%",
+            BinOp::LShift      => "<<",
+            BinOp::RShift      => ">>",
+            BinOp::BitAnd      => "&",
+            BinOp::BitOr       => "|",
+            BinOp::BitXor      => "^",
+            BinOp::BoolAnd     => "&&",
+            BinOp::BoolOr      => "||",
+            BinOp::Element     => ".",
+            BinOp::Member      => "[]",
+            BinOp::Eq          => "==",
+            BinOp::NotEq       => "!=",
+            BinOp::Less        => "<",
+            BinOp::Greater     => ">",
+            BinOp::LessEq      => "<=",
+            BinOp::GreaterEq   => ">=",
+        }
+    }
+}
+
+pub struct DumpContext {
+    pub blank: bool,
+    pub depth: int,
+}
+
+impl DumpContext {
+    pub fn new() -> DumpContext {
+        DumpContext {
+            blank:  true,
+            depth:  0,
+        }
+    }
+
+    pub fn newline(&mut self) {
+        if self.blank {
+            return;
+        }
+
+        self.put("\n");
+        self.indent();
+        self.blank = true;
+    }
+
+    fn indent(&self) {
+        for i in range(0, self.depth) {
+            self.put("   ");
+        }
+    }
+
+    pub fn push(&mut self, s: &str) {
+        self.newline();
+        self.put(s);
+        self.put("(");
+        self.newline();
+
+        self.depth += 1;
+    }
+
+    pub fn pop(&mut self) {
+        self.newline();
+        self.put(")");
+        self.newline();
+
+        if self.depth > 0 {
+            self.depth -= 1;
+        }
+    }
+
+    pub fn putln(&self, s: &str) {
+        self.put(s);
+        self.put("\n");
+    }
+
+    fn put(&self, s: &str) {
+        print!("{}", s);
+    }
 }
