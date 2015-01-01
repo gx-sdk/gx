@@ -39,9 +39,15 @@ pub struct BitvecMember {
 
 impl<'a> PartialEq for Type<'a> {
     fn eq(&self, other: &Type<'a>) -> bool {
+        self.spec == other.spec
+    }
+}
+
+impl<'a> PartialEq for TypeSpec<'a> {
+    fn eq(&self, other: &TypeSpec<'a>) -> bool {
         use self::TypeSpec::*;
 
-        match (&self.spec, &other.spec) {
+        match (self, other) {
             (&U8,  &U8)  => true,
             (&U16, &U16) => true,
             (&U32, &U32) => true,
