@@ -39,33 +39,24 @@ pub struct BitvecMember {
 
 impl<'a> PartialEq for Type<'a> {
     fn eq(&self, other: &Type<'a>) -> bool {
-        match self.spec {
-            TypeSpec::U8  => match other.spec { TypeSpec::U8  => true, _ => false },
-            TypeSpec::U16 => match other.spec { TypeSpec::U16 => true, _ => false },
-            TypeSpec::U32 => match other.spec { TypeSpec::U32 => true, _ => false },
-            TypeSpec::S8  => match other.spec { TypeSpec::S8  => true, _ => false },
-            TypeSpec::S16 => match other.spec { TypeSpec::S16 => true, _ => false },
-            TypeSpec::S32 => match other.spec { TypeSpec::S32 => true, _ => false },
+        use self::TypeSpec::*;
 
-            TypeSpec::BCD(x) => match other.spec {
-                TypeSpec::BCD(y)            => x == y,
-                _                           => false,
-            },
+        match (&self.spec, &other.spec) {
+            (&U8,  &U8)  => true,
+            (&U16, &U16) => true,
+            (&U32, &U32) => true,
+            (&S8,  &S8)  => true,
+            (&S16, &S16) => true,
+            (&S32, &S32) => true,
 
-            TypeSpec::Fixed(a,b) => match other.spec {
-                TypeSpec::Fixed(c,d)        => (a == c) && (b == d),
-                _                           => false,
-            },
-
-            TypeSpec::Pointer(ref t1) => match other.spec {
-                TypeSpec::Pointer(ref t2)   => t1 == t2,
-                _                           => false,
-            },
-
-            TypeSpec::Array(n1, ref t1) => match other.spec {
-                TypeSpec::Array(n2, ref t2) => n1 == n2 && t1 == t2,
-                _                           => false,
-            },
+            (&BCD(x), &BCD(y))
+                => x == y,
+            (&Fixed(a,b), &Fixed(c,d))
+                => (a == c) && (b == d),
+            (&Pointer(ref t1), &Pointer(ref t2))
+                => t1 == t2,
+            (&Array(n1, ref t1), &Array(n2, ref t2))
+                => n1 == n2 && t1 == t2,
 
             _ => false, /* TODO */
         }
