@@ -51,6 +51,20 @@ impl<'a> PartialEq for Type<'a> {
             (&Array(n1, ref t1), &Array(n2, ref t2))
                 => n1 == n2 && t1 == t2,
 
+            (&Struct(ref v1), &Struct(ref v2)) => {
+                if v1.len() != v2.len() {
+                    return false;
+                }
+
+                for (a, b) in v1.iter().zip(v2.iter()) {
+                    if a.typ != b.typ {
+                        return false;
+                    }
+                }
+
+                return true
+            },
+
             _ => false, /* TODO */
         }
     }
@@ -74,7 +88,18 @@ impl<'a> ToString for Type<'a> {
 
             Pointer(ref to) => format!("*{}", to.to_string()),
             Array(n, ref to) => format!("[{}]{}", n, to.to_string()),
-            Struct(_) => String::from_str("struct{...}"),
+            Struct(ref v) => {
+                let mut body = String::new();
+                for x in v.iter() {
+                    let s = if body.is_empty() {
+                        x.typ.to_string()
+                    } else {
+                        format!(",{}", x.typ.to_string())
+                    };
+                    body.push_str(s.as_slice());
+                }
+                format!("struct{{{}}}", body)
+            }
         }
     }
 }
