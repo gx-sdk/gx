@@ -1,7 +1,5 @@
 /* type system */
 
-use std::collections::HashMap;
-
 pub enum Type<'a> {
     /* singleton primitive types: */
     U8, U16, U32,
@@ -10,26 +8,22 @@ pub enum Type<'a> {
     /* parameterized primitive types: */
     BCD            (uint),
     Fixed          (uint, uint),
-    Bitvec         (uint, HashMap<&'a str, &'a BitvecMember>),
+    Bitvec         (uint, Vec<BitvecMember>),
 
     /* compound types: */
     Pointer        (&'a Type<'a>),
     Array          (uint, &'a Type<'a>),
-    Struct         (HashMap<&'a str, &'a StructMember<'a>>),
+    Struct         (Vec<StructMember<'a>>),
 }
 
 pub struct StructMember<'a> {
     pub name:      String,
     pub typ:       &'a Type<'a>,
-
-    pub offs:      uint,
 }
 
-pub struct BitvecMember {
-    pub name:      String,
-
-    pub bitoffs:   uint,
-    pub bitlen:    uint,
+pub enum BitvecMember {
+    Literal        (uint, uint),
+    Variable       (uint, String),
 }
 
 impl<'a> PartialEq for Type<'a> {
