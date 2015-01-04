@@ -57,3 +57,26 @@ impl<'a> PartialEq for Type<'a> {
         }
     }
 }
+
+impl<'a> ToString for Type<'a> {
+    fn to_string(&self) -> String {
+        use self::Type::*;
+
+        match *self {
+            U8  => String::from_str("u8"),
+            U16 => String::from_str("u16"),
+            U32 => String::from_str("u32"),
+            S8  => String::from_str("s8"),
+            S16 => String::from_str("s16"),
+            S32 => String::from_str("s32"),
+
+            BCD(x) => format!("bcd<{}>", x),
+            Fixed(x,y) => format!("fixed<{},{}>", x, y),
+            Bitvec(n, _) => format!("bitvec<{}>(...)", n),
+
+            Pointer(ref to) => format!("*{}", to.to_string()),
+            Array(n, ref to) => format!("[{}]{}", n, to.to_string()),
+            Struct(_) => String::from_str("struct{...}"),
+        }
+    }
+}
