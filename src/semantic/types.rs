@@ -36,6 +36,10 @@ impl<'a> PartialEq for Type<'a> {
     fn eq(&self, other: &Type<'a>) -> bool {
         use self::Type::*;
 
+        if self as *const Type<'a> == other as *const Type<'a> {
+            return true;
+        }
+
         match (self, other) {
             (&U8,  &U8)  => true,
             (&U16, &U16) => true,
