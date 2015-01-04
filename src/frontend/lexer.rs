@@ -1,3 +1,11 @@
+// gx language implementation
+// Copyright (C) 2014-present Alex Iadicicco <http://ajitek.net>
+//
+// For licensing information, refer to the COPYING file
+// in the project root
+
+//! Lexer for the `gx` language. Very simple lexer.
+
 use std::io::IoResult;
 use std::num::FromStrRadix;
 
@@ -5,24 +13,25 @@ use frontend::token::*;
 
 fn is_identifier_char(c: char) -> bool { c.is_alphanumeric() || c == '_' }
 
-/* The Lexer struct is the gx-lang lexer implementation. It implements
-   the Iterator trait, which yields a stream of tokens lexed out of
-   the input character iterator. */
-
-/* Internally, Lexer is also capable of un-reading a character from
-   the input stream, using an 'ungot' stack, which is an essential
-   lexer implementation feature.
-                   input pointer
-                            |
-                            v
-   +---+---+---+---+---+---+---+---+- - -
-   | a | = | b | * | c | ; |\n |\t | rest of input
-   +---+---+---+---+---+---+---+---+- - -
-             ungot growth  :
-                    <------: ungot bottom
-
-   when ungot is used as a stack in this manner, characters will be
-   read back in the opposite order they are ungot. */
+/// The Lexer struct is the gx-lang lexer implementation. It implements
+/// the Iterator trait, which yields a stream of tokens lexed out of
+/// the input character iterator.
+///
+/// Internally, Lexer is also capable of un-reading a character from
+/// the input stream, using an 'ungot' stack, which is an essential
+/// lexer implementation feature.
+///
+///                     input pointer
+///                              |
+///                              v
+///     +---+---+---+---+---+---+---+---+- - -
+///     | a | = | b | * | c | + | d | . | rest of input
+///     +---+---+---+---+---+---+---+---+- - -
+///               ungot growth  :
+///                      <------: ungot bottom
+///
+/// when ungot is used as a stack in this manner, characters will be
+/// read back in the opposite order they are ungot.
 
 pub struct Lexer<It> {
     input: It,

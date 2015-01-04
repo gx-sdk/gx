@@ -1,4 +1,12 @@
+// gx language implementation
+// Copyright (C) 2014-present Alex Iadicicco <http://ajitek.net>
+//
+// For licensing information, refer to the COPYING file
+// in the project root
+
 #![feature(globs)]
+
+#![experimental = "awaiting end-to-end implementation"]
 
 pub mod frontend;
 pub mod semantic;
@@ -34,7 +42,7 @@ mod driver {
         };
         */
 
-        /* read an Input from the stream */
+        // read an Input from the stream
         let f = parse(stdin().lock().chars());
         let mut d = DumpContext::new();
         for unit in f.iter() {

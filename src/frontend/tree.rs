@@ -1,4 +1,11 @@
-/* parse tree definitions */
+// gx language implementation
+// Copyright (C) 2014-present Alex Iadicicco <http://ajitek.net>
+//
+// For licensing information, refer to the COPYING file
+// in the project root
+
+//! Parse tree structures. Most of these match almost exactly with the
+//! equivalents in the grammar.
 
 pub type Id = String;
 pub type Number = int;

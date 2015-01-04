@@ -1,10 +1,17 @@
+// gx language implementation
+// Copyright (C) 2014-present Alex Iadicicco <http://ajitek.net>
+//
+// For licensing information, refer to the COPYING file
+// in the project root
+
 #[deriving(Show,PartialEq)]
 pub enum Token {
-    /* this will never be yielded from the lexer; it is used internally to
-       indicate that another iteration of the input loop is needed */
+    /// This will never be yielded from the lexer; it is used internally to
+    /// indicate that another iteration of the input loop is needed. TODO:
+    /// Reimplement the places Token::Ignore is used in terms of Option<>
     Ignore,
 
-    /* parameterized token types */
+    // parameterized token types
 
     Number(uint),
     Identifier(String),
@@ -12,66 +19,66 @@ pub enum Token {
     Character(char),
     BinaryString(String),
 
-    /* glyphs */
+    // glyphs
 
-    LParen,      /*  (  */
-    RParen,      /*  )  */
-    LBrack,      /*  [  */
-    RBrack,      /*  ]  */
-    LBrace,      /*  {  */
-    RBrace,      /*  }  */
+    LParen,      // (
+    RParen,      // )
+    LBrack,      // [
+    RBrack,      // ]
+    LBrace,      // {
+    RBrace,      // }
 
-    Dot,         /*  .  */
-    Comma,       /*  ,  */
-    Colon,       /*  :  */
-    Semicolon,   /*  ;  */
-    Question,    /*  ?  */
+    Dot,         // .
+    Comma,       // ,
+    Colon,       // :
+    Semicolon,   // ;
+    Question,    // ?
 
-    LArr,        /*  <- */
-    RArr,        /*  -> */
-    RDblArr,     /*  => */
+    LArr,        // <-
+    RArr,        // ->
+    RDblArr,     // =>
 
-    Plus,        /*  +  */
-    Minus,       /*  -  */
-    Star,        /*  *  */
-    Slash,       /*  /  */
-    Mod,         /*  %  */
+    Plus,        // +
+    Minus,       // -
+    Star,        // *
+    Slash,       // /
+    Mod,         // %
 
-    Tilde,       /*  ~  */
-    Amp,         /*  &  */
-    Pipe,        /*  |  */
-    Caret,       /*  ^  */
-    LShift,      /*  << */
-    RShift,      /*  >> */
+    Tilde,       // ~
+    Amp,         // &
+    Pipe,        // |
+    Caret,       // ^
+    LShift,      // <<
+    RShift,      // >>
 
-    Incr,        /*  ++ */
-    Decr,        /*  -- */
+    Incr,        // ++
+    Decr,        // --
 
-    Excl,        /*  !  */
-    DblAmp,      /*  && */
-    DblPipe,     /*  || */
+    Excl,        // !
+    DblAmp,      // &&
+    DblPipe,     // ||
 
-    Eq,          /*  == */
-    NotEq,       /*  != */
-    Less,        /*  <  */
-    Greater,     /*  >  */
-    LessEq,      /*  <= */
-    GreaterEq,   /*  >= */
+    Eq,          // ==
+    NotEq,       // !=
+    Less,        // <
+    Greater,     // >
+    LessEq,      // <=
+    GreaterEq,   // >=
 
-    Assign,      /*  =  */
-    PlusEq,      /*  += */
-    MinusEq,     /*  -= */
-    StarEq,      /*  *= */
-    SlashEq,     /*  /= */
-    ModEq,       /*  %= */
-    BitNotEq,    /*  ~= */
-    BitAndEq,    /*  &= */
-    BitOrEq,     /*  |= */
-    BitXorEq,    /*  ^= */
-    LShiftEq,    /* <<= */
-    RShiftEq,    /* >>= */
+    Assign,      // =
+    PlusEq,      // +=
+    MinusEq,     // -=
+    StarEq,      // *=
+    SlashEq,     // /=
+    ModEq,       // %=
+    BitNotEq,    // ~=
+    BitAndEq,    // &=
+    BitOrEq,     // |=
+    BitXorEq,    // ^=
+    LShiftEq,    // <<=
+    RShiftEq,    // >>=
 
-    /* keywords */
+    // keywords
 
     Bitvec,
     Break,

@@ -1,6 +1,27 @@
+// gx language implementation
+// Copyright (C) 2014-present Alex Iadicicco <http://ajitek.net>
+//
+// For licensing information, refer to the COPYING file
+// in the project root
+
+//! Parser for the `gx` language. Internally is a mostly recursive descent
+//! parser, with some PEG-like functions to handle associativity correctly.
+//! For a reasonably up-to-date resource summarizing the grammar, refer
+//! to [`doc/GRAMMAR` in the `gx` tree][grammar], but be warned that this
+//! file is both messy and liable to go out of date. Eventually the grammar
+//! will be transcribed as an appendix in [the gx specification][spec].
+//!
+//! [grammar]: http://github.com/gx-sdk/gx/blob/master/doc/GRAMMAR
+//! [spec]: http://github.com/gx-sdk/gx-spec
+
 use frontend::token::Token;
 use frontend::tree::*;
 
+/// An instance of a parser. If you have an `Iterator<Token>` go ahead and
+/// create one with `Parser::new`. The resulting `Parser` instance is full
+/// of functions for parsing the different non-terminals in the grammar, but
+/// the most relevant is probably `Parser::file`, corresponding to the start
+/// symbol.
 pub struct Parser<It> {
     input: It,
     ungot: Vec<Token>,
@@ -176,12 +197,12 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    /* type-spec  -> id
-                  -> id '<' constant-list '>'
-                  -> '*' type-spec
-                  -> '[' number ']' type-spec
-                  -> struct-spec
-                  -> bitvec-spec */
+    // type-spec  -> id
+    //            -> id '<' constant-list '>'
+    //            -> '*' type-spec
+    //            -> '[' number ']' type-spec
+    //            -> struct-spec
+    //            -> bitvec-spec
     pub fn type_spec(&mut self) -> TypeSpec {
         match self.gettok() {
             Token::Identifier(id) => {
@@ -522,7 +543,7 @@ impl <It: Iterator<Token>> Parser<It> {
                 }
             },
 
-            /* everything an expr can start with. KEEP UPDATED! */
+            // everything an expr can start with. KEEP UPDATED!
             Token::Incr           |
             Token::Decr           |
             Token::Excl           |
@@ -667,8 +688,8 @@ impl <It: Iterator<Token>> Parser<It> {
         let mut list = Vec::new();
 
         loop {
-            /* this is awful, it's everything that can follow an ex-list,
-               and it stops if it sees that */
+            // this is awful, it's everything that can follow an ex-list,
+            // and it stops if it sees that
             match *self.peek() {
                 Token::RParen => return list,
                 _ => { }

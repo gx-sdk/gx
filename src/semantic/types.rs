@@ -1,26 +1,55 @@
-/* type system */
+// gx language implementation
+// Copyright (C) 2014-present Alex Iadicicco <http://ajitek.net>
+//
+// For licensing information, refer to the COPYING file
+// in the project root
 
+//! Semantic understanding of `gx` types. The structures here are carefully
+//! designed to reflect only the semantic extent of the type system.
+
+/// The primary type descriptor. An equivalence relation is defined for this
+/// enum that considers only the relevant structural aspects of a type. For
+/// example, two `Type::Struct`s are considered equal if they have the same
+/// number of members, and the member types are all equal.
 pub enum Type<'a> {
-    /* singleton primitive types: */
-    U8, U16, U32,
-    S8, S16, S32,
+    /// Unsigned 8-bit value
+    U8,
+    /// Unsigned 16-bit value
+    U16,
+    /// Unsigned 32-bit value
+    U32,
+    /// Signed 8-bit value
+    S8,
+    /// Signed 16-bit value
+    S16,
+    /// Signed 32-bit value
+    S32,
 
-    /* parameterized primitive types: */
+    /// Binary coded decimal. The single argument is the number of digits.
     BCD            (uint),
+    /// Fixed point arithmetic value. The attributes represent the number of
+    /// bits before and after the decimal point, respectively.
     Fixed          (uint, uint),
+    /// Bit vector (bitvec) type. The first argument is the number of bits
+    /// in the full vector, and the second argument is a vector of members.
     Bitvec         (uint, Vec<BitvecMember>),
 
-    /* compound types: */
+    /// A pointer to a value of the given type.
     Pointer        (&'a Type<'a>),
+    /// An array of values of the given type. The first argument represents
+    /// the number of elements in the array, as declared.
     Array          (uint, &'a Type<'a>),
+    /// A struct.
     Struct         (Vec<StructMember<'a>>),
 }
 
+/// A member of a struct.
 pub struct StructMember<'a> {
     pub name:      String,
     pub typ:       &'a Type<'a>,
 }
 
+/// A member of a bitvec.
 pub enum BitvecMember {
     Literal        (uint, uint),
     Variable       (uint, String),
