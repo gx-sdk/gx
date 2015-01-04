@@ -65,7 +65,21 @@ impl<'a> PartialEq for Type<'a> {
                 return true
             },
 
-            _ => false, /* TODO */
+            (&Bitvec(n1, ref v1), &Bitvec(n2, ref v2)) => {
+                if n1 != n2 || v1.len() != v2.len() {
+                    return false;
+                }
+
+                for (a, b) in v1.iter().zip(v2.iter()) {
+                    if a.size() != b.size() {
+                        return false;
+                    }
+                }
+
+                return true
+            },
+
+            _ => false,
         }
     }
 }
@@ -100,6 +114,15 @@ impl<'a> ToString for Type<'a> {
                 }
                 format!("struct{{{}}}", body)
             }
+        }
+    }
+}
+
+impl BitvecMember {
+    fn size(&self) -> uint {
+        match *self {
+            BitvecMember::Literal(x, _)   => x,
+            BitvecMember::Variable(x, _)  => x,
         }
     }
 }
