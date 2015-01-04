@@ -2,12 +2,7 @@
 
 use std::collections::HashMap;
 
-pub struct Type<'a> {
-    pub name:      String,
-    pub spec:      TypeSpec<'a>,
-}
-
-pub enum TypeSpec<'a> {
+pub enum Type<'a> {
     /* singleton primitive types: */
     U8, U16, U32,
     S8, S16, S32,
@@ -39,13 +34,7 @@ pub struct BitvecMember {
 
 impl<'a> PartialEq for Type<'a> {
     fn eq(&self, other: &Type<'a>) -> bool {
-        self.spec == other.spec
-    }
-}
-
-impl<'a> PartialEq for TypeSpec<'a> {
-    fn eq(&self, other: &TypeSpec<'a>) -> bool {
-        use self::TypeSpec::*;
+        use self::Type::*;
 
         match (self, other) {
             (&U8,  &U8)  => true,
