@@ -8,6 +8,8 @@
 
 #[deriving(Show,PartialEq)]
 pub enum Token {
+    EOF,
+
     // parameterized token types
 
     Number(uint),
@@ -144,6 +146,8 @@ impl Copy for TokenAttr {
 impl Token {
     pub fn attrs(&self) -> TokenAttr {
         match *self {
+            Token::EOF =>           TokenAttr("end of file", "(eof)"),
+
             Token::Number(_) =>     TokenAttr("number literal", "(num)"),
             Token::Identifier(_) => TokenAttr("identifier", "(id)"),
             Token::String(_) =>     TokenAttr("string literal", "(str)"),

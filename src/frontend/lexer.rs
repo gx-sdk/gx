@@ -37,6 +37,7 @@ pub struct Lexer<It> {
     input: It,
     ungot: Vec<char>,
     line_number: uint,
+    sent_eof: bool,
 }
 
 enum LexerStep {
@@ -51,6 +52,7 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
             input: input,
             ungot: Vec::with_capacity(5),
             line_number: 1,
+            sent_eof: false,
         }
     }
 
@@ -351,7 +353,14 @@ impl <It: Iterator<IoResult<char>>> Iterator<Token> for Lexer<It> {
             match self.try_token() {
                 LexerStep::Step(x) => return Some(x),
                 LexerStep::Again => { },
-                LexerStep::EndOfInput => return None
+                LexerStep::EndOfInput => {
+                    if self.sent_eof {
+                        return None
+                    } else {
+                        self.sent_eof = true;
+                        return Some(Token::EOF)
+                    }
+                },
             }
         }
     }
