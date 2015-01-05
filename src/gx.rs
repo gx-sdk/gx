@@ -13,6 +13,7 @@
 
 pub mod frontend;
 pub mod semantic;
+pub mod expr;
 
 mod driver {
     extern crate getopts;

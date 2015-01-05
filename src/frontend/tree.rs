@@ -7,6 +7,8 @@
 //! Parse tree structures. Most of these match almost exactly with the
 //! equivalents in the grammar.
 
+use expr::Expr;
+
 pub type Id = String;
 pub type Number = int;
 
@@ -38,7 +40,7 @@ pub struct TypeDecl {
 /// Type specifier
 pub enum TypeSpec {
     Alias          (Id),
-    Parameterized  (Id, Vec<Expr>),
+    Parameterized  (Id, Vec<Expr<Primary>>),
     Pointer        (Box<TypeSpec>),
     Array          (Number, Box<TypeSpec>),
     Struct         (Vec<VarDecl>),
@@ -67,19 +69,19 @@ impl Copy for StorageLoc {
 }
 pub enum StorageParam {
     Region         (RegionName),
-    Ext            (Id, Vec<Expr>),
+    Ext            (Id, Vec<Expr<Primary>>),
 }
 /// Generic variable declaration
 pub struct VarDecl {
     pub ids:       Vec<Id>,
     pub typ:       TypeSpec,
-    pub init:      Option<Expr>,
+    pub init:      Option<Expr<Primary>>,
 }
 
 pub struct ConstDecl {
     pub id:        Id,
     pub typ:       TypeSpec,
-    pub init:      Expr,
+    pub init:      Expr<Primary>,
 }
 
 pub struct RegionDecl {
@@ -105,7 +107,7 @@ pub struct FuncParam {
 /// Program statement
 pub enum Stmt {
     /// Evaluate the given expression and discard the result
-    Eval           (Expr),
+    Eval           (Expr<Primary>),
     /// Execute the statements in order
     Compound       (Vec<Stmt>),
     /// Declares a variable. A sort of 'lifting' is performed, akin to
@@ -136,21 +138,21 @@ pub enum Stmt {
     /// the innermost repeatable block (loops)
     Repeat,
     /// Returns from the containing function.
-    Return         (Option<Expr>)
+    Return         (Option<Expr<Primary>>)
 }
 
 pub struct IfStmt {
-    pub cond:      Expr,
+    pub cond:      Expr<Primary>,
     pub tb:        Box<Stmt>,
     pub fb:        Option<Box<Stmt>>,
 }
 
 pub struct SwitchStmt {
-    pub ex:        Expr,
+    pub ex:        Expr<Primary>,
     pub cases:     Vec<SwitchCase>,
 }
 pub enum SwitchCase {
-    Case           (Expr, Stmt),
+    Case           (Expr<Primary>, Stmt),
     Default        (Stmt),
 }
 
@@ -159,124 +161,20 @@ pub struct LoopStmt {
 }
 
 pub struct WhileStmt {
-    pub cond:      Expr,
+    pub cond:      Expr<Primary>,
     pub body:      Box<Stmt>,
 }
 
 pub struct ForStmt {
     pub id:        Id,
-    pub iter:      Expr,
+    pub iter:      Expr<Primary>,
     pub body:      Box<Stmt>,
 }
 
-/// An expression. Expressions have some value they evaluate to, which is
-/// often dependent on its parameters. Expressions may also have locations
-/// and side effects.
-pub enum Expr {
-    /// Evaluates the expressions in order, discarding the results of all
-    /// but the last. The result of the last subexpression becomes the result
-    /// of the whole expression.
-    Comma          (Vec<Expr>),
-    /// Assigns the value of the second expression to the location of the
-    /// first expression, optionally applying the given binary operation to
-    /// the existing value and the value to be assigned before assignment.
-    Assign         (Box<Expr>, Box<Expr>, Option<BinOp>),
-    /// Evaluates the first expression, and then evaluates only the second or
-    /// third depending on whether the first expression had a truth-ish
-    /// value. Essentially an expression version of the if statement.
-    Ternary        (Box<Expr>, Box<Expr>, Box<Expr>),
-    /// Binary operation. Evaluates the two subexpressions and then combines
-    /// their results by applying the given operation.
-    Binary         (BinOp, Box<Expr>, Box<Expr>),
-    /// Unary operation. Evaluates the subexpression and then applies the
-    /// given unary operator.
-    Unary          (UnOp, Box<Expr>),
-    /// Evaluates the first expression, and calls it as a function with
-    /// the results of the expressions in the vector as arguments.
-    Call           (Box<Expr>, Vec<Expr>),
-    /// Evaluates the expression, then evaluates to the member of the
-    /// resulting value with the given identifier. Has a location.
-    Member         (Box<Expr>, Id),
-    /// Evaluates the expression, then evaluates to the member of the
-    /// resulting scope with the given identifier. Has a location.
-    Scoped         (Box<Expr>, Id),
-    /// Just an identifier. May or may not have a location. In later passes
-    /// will be resolved to a symbol containing more information.
+pub enum Primary {
+    Scoped         (Box<Primary>, Id),
     Id             (Id),
-    /// Just a number. Does not by itself have a location.
     Number         (Number),
-}
-
-/// Binary operators, from a grammar standpoint. This list is re-implemented
-/// in later passes as needed.
-#[deriving(Show)]
-pub enum BinOp {
-    #[doc = "addition"]                         Add,
-    #[doc = "subtraction"]                      Sub,
-    #[doc = "multiplication"]                   Mul,
-    #[doc = "division"]                         Div,
-    #[doc = "modulus"]                          Mod,
-    #[doc = "left shift"]                       LShift,
-    #[doc = "right shift"]                      RShift,
-    #[doc = "bitwise and"]                      BitAnd,
-    #[doc = "bitwise or"]                       BitOr,
-    #[doc = "bitwise exclusive or"]             BitXor,
-    #[doc = "boolean and"]                      BoolAnd,
-    #[doc = "boolean or"]                       BoolOr,
-    #[doc = "element-of (array subscript)"]     Element,
-    #[doc = "equality test"]                    Eq,
-    #[doc = "inequality test"]                  NotEq,
-    #[doc = "less than"]                        Less,
-    #[doc = "greater than"]                     Greater,
-    #[doc = "less than or equal to"]            LessEq,
-    #[doc = "greater than or equal to"]         GreaterEq,
-}
-impl Copy for BinOp {
-}
-
-/// Unary operators, from a grammar standpoint. This list is re-implemented
-/// in later passes as needed.
-#[deriving(Show)]
-pub enum UnOp {
-    #[doc = "pre-incerment"]                    PreIncr,
-    #[doc = "post-increment"]                   PostIncr,
-    #[doc = "pre-decrement"]                    PreDecr,
-    #[doc = "post-decrement"]                   PostDecr,
-    #[doc = "address-of"]                       AddrOf,
-    #[doc = "pointer dereference"]              Deref,
-    #[doc = "sizeof"]                           SizeOf,
-    #[doc = "bitwise negation"]                 BitNot,
-    #[doc = "boolean negation"]                 BoolNot,
-}
-impl Copy for UnOp {
-}
-
-impl BinOp {
-    /// Returns a printable glyph representing the given binary
-    /// operation. Useful mostly for debugging/diagnostic purposes
-    pub fn glyph(&self) -> &'static str {
-        match *self {
-            BinOp::Add         => "+",
-            BinOp::Sub         => "-",
-            BinOp::Mul         => "*",
-            BinOp::Div         => "/",
-            BinOp::Mod         => "%",
-            BinOp::LShift      => "<<",
-            BinOp::RShift      => ">>",
-            BinOp::BitAnd      => "&",
-            BinOp::BitOr       => "|",
-            BinOp::BitXor      => "^",
-            BinOp::BoolAnd     => "&&",
-            BinOp::BoolOr      => "||",
-            BinOp::Element     => "[]",
-            BinOp::Eq          => "==",
-            BinOp::NotEq       => "!=",
-            BinOp::Less        => "<",
-            BinOp::Greater     => ">",
-            BinOp::LessEq      => "<=",
-            BinOp::GreaterEq   => ">=",
-        }
-    }
 }
 
 pub struct DumpContext {
@@ -412,7 +310,7 @@ impl TypeSpec {
                 d.push_str("TypeSpec::Parameterized");
                 d.put_ln(format!("id: {}", x));
                 for t in y.iter() {
-                    t.dump(d);
+                    //t.dump(d);
                 }
                 d.pop();
             },
@@ -502,7 +400,7 @@ impl StorageParam {
                 d.push_str("StorageParam::Ext");
                 d.put_ln(format!("id: {}", id));
                 for ex in v.iter() {
-                    ex.dump(d);
+                    //ex.dump(d);
                 }
                 d.pop();
             },
@@ -524,7 +422,7 @@ impl VarDecl {
         }
         self.typ.dump(d);
         match self.init {
-            Some(ref x)  => x.dump(d),
+            Some(ref x)  => { }, //x.dump(d),
             None         => { },
         }
         d.pop();
@@ -536,7 +434,7 @@ impl ConstDecl {
         d.push_str("ConstDecl");
         d.put_ln(format!("id: {}", self.id));
         self.typ.dump(d);
-        self.init.dump(d);
+        //self.init.dump(d);
         d.pop();
     }
 }
@@ -590,7 +488,7 @@ impl Stmt {
         match *self {
             Stmt::Eval(ref ex) => {
                 d.push_str("Stmt::Eval");
-                ex.dump(d);
+                //ex.dump(d);
                 d.pop();
             },
             Stmt::Compound(ref v) => {
@@ -622,7 +520,7 @@ impl Stmt {
                 match *t {
                     Some(ref ex) => {
                         d.push_str("Stmt::Return");
-                        ex.dump(d);
+                        //ex.dump(d);
                         d.pop();
                     },
                     None => {
@@ -637,7 +535,7 @@ impl Stmt {
 impl IfStmt {
     pub fn dump(&self, d: &mut DumpContext) {
         d.push_str("IfStmt");
-        self.cond.dump(d);
+        //self.cond.dump(d);
         self.tb.dump(d);
         match self.fb {
             Some(box ref st)  => st.dump(d),
@@ -650,7 +548,7 @@ impl IfStmt {
 impl SwitchStmt {
     pub fn dump(&self, d: &mut DumpContext) {
         d.push_str("SwitchStmt");
-        self.ex.dump(d);
+        //self.ex.dump(d);
         for c in self.cases.iter() {
             c.dump(d);
         }
@@ -663,7 +561,7 @@ impl SwitchCase {
         match *self {
             SwitchCase::Case(ref x, ref st) => {
                 d.push_str("SwitchCase::Case");
-                x.dump(d);
+                //x.dump(d);
                 st.dump(d);
                 d.pop();
             },
@@ -687,7 +585,7 @@ impl LoopStmt {
 impl WhileStmt {
     pub fn dump(&self, d: &mut DumpContext) {
         d.push_str("WhileStmt");
-        self.cond.dump(d);
+        //self.cond.dump(d);
         self.body.dump(d);
         d.pop();
     }
@@ -697,12 +595,13 @@ impl ForStmt {
     pub fn dump(&self, d: &mut DumpContext) {
         d.push_str("ForStmt");
         d.put_ln(format!("id: {}", self.id));
-        self.iter.dump(d);
+        //self.iter.dump(d);
         self.body.dump(d);
         d.pop();
     }
 }
 
+/*
 impl Expr {
     pub fn dump(&self, d: &mut DumpContext) {
         match *self {
@@ -776,3 +675,4 @@ impl Expr {
         }
     }
 }
+*/

@@ -17,6 +17,8 @@
 use frontend::token::Token;
 use frontend::tree::*;
 
+use expr::*;
+
 /// An instance of a parser. If you have an `Iterator<Token>` go ahead and
 /// create one with `Parser::new`. The resulting `Parser` instance is full
 /// of functions for parsing the different non-terminals in the grammar, but
@@ -70,12 +72,12 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn constant(&mut self) -> Expr {
-        match self.gettok() {
-            Token::Number(x) =>     Expr::Number(x as int),
-            Token::Character(x) =>  Expr::Number(x as int),
+    pub fn constant(&mut self) -> Expr<Primary> {
+        Expr::Primary(match self.gettok() {
+            Token::Number(x) =>     Primary::Number(x as int),
+            Token::Character(x) =>  Primary::Number(x as int),
             _ => panic!("expected constant"),
-        }
+        })
     }
 
     pub fn number(&mut self) -> Number {
@@ -99,7 +101,7 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn constant_list(&mut self) -> Vec<Expr> {
+    pub fn constant_list(&mut self) -> Vec<Expr<Primary>> {
         let mut v = Vec::new();
 
         loop {
@@ -680,11 +682,11 @@ impl <It: Iterator<Token>> Parser<It> {
         })
     }
 
-    pub fn expr(&mut self) -> Expr {
+    pub fn expr(&mut self) -> Expr<Primary> {
         self.ex_comma()
     }
 
-    pub fn ex_list(&mut self) -> Vec<Expr> {
+    pub fn ex_list(&mut self) -> Vec<Expr<Primary>> {
         let mut list = Vec::new();
 
         loop {
@@ -704,7 +706,7 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn ex_comma(&mut self) -> Expr {
+    pub fn ex_comma(&mut self) -> Expr<Primary> {
         let left = self.ex_assign();
 
         match *self.peek() {
@@ -723,7 +725,7 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn ex_assign(&mut self) -> Expr {
+    pub fn ex_assign(&mut self) -> Expr<Primary> {
         let left = self.ex_tern();
 
         let op = match *self.peek() {
@@ -744,13 +746,13 @@ impl <It: Iterator<Token>> Parser<It> {
         self.gettok();
 
         Expr::Assign(
+            op,
             box left,
             box self.ex_assign(),
-            op
         )
     }
 
-    pub fn ex_tern(&mut self) -> Expr {
+    pub fn ex_tern(&mut self) -> Expr<Primary> {
         let left = self.ex_lor();
 
         match *self.peek() {
@@ -769,7 +771,7 @@ impl <It: Iterator<Token>> Parser<It> {
         )
     }
 
-    pub fn ex_lor(&mut self) -> Expr {
+    pub fn ex_lor(&mut self) -> Expr<Primary> {
         let mut left = self.ex_land();
 
         loop {
@@ -782,7 +784,7 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn ex_land(&mut self) -> Expr {
+    pub fn ex_land(&mut self) -> Expr<Primary> {
         let mut left = self.ex_bor();
 
         loop {
@@ -795,7 +797,7 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn ex_bor(&mut self) -> Expr {
+    pub fn ex_bor(&mut self) -> Expr<Primary> {
         let mut left = self.ex_bxor();
 
         loop {
@@ -808,7 +810,7 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn ex_bxor(&mut self) -> Expr {
+    pub fn ex_bxor(&mut self) -> Expr<Primary> {
         let mut left = self.ex_band();
 
         loop {
@@ -821,7 +823,7 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn ex_band(&mut self) -> Expr {
+    pub fn ex_band(&mut self) -> Expr<Primary> {
         let mut left = self.ex_eq();
 
         loop {
@@ -834,7 +836,7 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn ex_eq(&mut self) -> Expr {
+    pub fn ex_eq(&mut self) -> Expr<Primary> {
         let mut left = self.ex_cmp();
 
         loop {
@@ -850,7 +852,7 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn ex_cmp(&mut self) -> Expr {
+    pub fn ex_cmp(&mut self) -> Expr<Primary> {
         let mut left = self.ex_shift();
 
         loop {
@@ -870,7 +872,7 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn ex_shift(&mut self) -> Expr {
+    pub fn ex_shift(&mut self) -> Expr<Primary> {
         let mut left = self.ex_add();
 
         loop {
@@ -886,7 +888,7 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn ex_add(&mut self) -> Expr {
+    pub fn ex_add(&mut self) -> Expr<Primary> {
         let mut left = self.ex_mul();
 
         loop {
@@ -902,7 +904,7 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn ex_mul(&mut self) -> Expr {
+    pub fn ex_mul(&mut self) -> Expr<Primary> {
         let mut left = self.ex_unary();
 
         loop {
@@ -920,7 +922,7 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn ex_unary(&mut self) -> Expr {
+    pub fn ex_unary(&mut self) -> Expr<Primary> {
         match self.gettok() {
             Token::Incr =>
                 Expr::Unary(UnOp::PreIncr, box self.ex_unary()),
@@ -942,7 +944,7 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn ex_bottom(&mut self) -> Expr {
+    pub fn ex_bottom(&mut self) -> Expr<Primary> {
         let mut left = self.ex_primary();
 
         loop {
@@ -962,7 +964,12 @@ impl <It: Iterator<Token>> Parser<It> {
                 Token::Dot =>
                     left = Expr::Member(box left, self.id()),
                 Token::DblColon =>
-                    left = Expr::Scoped(box left, self.id()),
+                    left = match left {
+                        Expr::Primary(p) =>
+                            Expr::Primary(Primary::Scoped(box p, self.id())),
+                        _ =>
+                            panic!("can only use :: on primaries"),
+                    },
 
                 tok =>
                     { self.untok(tok); return left }
@@ -970,14 +977,14 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn ex_primary(&mut self) -> Expr {
+    pub fn ex_primary(&mut self) -> Expr<Primary> {
         match self.gettok() {
             Token::Identifier(x) =>
-                Expr::Id(x),
+                Expr::Primary(Primary::Id(x)),
             Token::Number(x) =>
-                Expr::Number(x as int),
+                Expr::Primary(Primary::Number(x as int)),
             Token::Character(x) =>
-                Expr::Number(x as int),
+                Expr::Primary(Primary::Number(x as int)),
             Token::LParen => {
                 let ex = self.expr();
                 self.expect(Token::RParen);
