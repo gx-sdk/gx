@@ -6,3 +6,4 @@
 
 pub mod types;
 pub mod program;
+pub mod symbol;
