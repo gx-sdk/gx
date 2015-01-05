@@ -21,14 +21,16 @@ fn is_identifier_char(c: char) -> bool { c.is_alphanumeric() || c == '_' }
 /// the input stream, using an 'ungot' stack, which is an essential
 /// lexer implementation feature.
 ///
-///                     input pointer
-///                              |
-///                              v
-///     +---+---+---+---+---+---+---+---+- - -
-///     | a | = | b | * | c | + | d | . | rest of input
-///     +---+---+---+---+---+---+---+---+- - -
-///               ungot growth  :
-///                      <------: ungot bottom
+/// ```plain
+///                 input pointer
+///                          |
+///                          v
+/// +---+---+---+---+---+---+---+---+- - -
+/// | a | = | b | * | c | + | d | . | rest of input
+/// +---+---+---+---+---+---+---+---+- - -
+///           ungot growth  :
+///                  <------: ungot bottom
+/// ```
 ///
 /// when ungot is used as a stack in this manner, characters will be
 /// read back in the opposite order they are ungot.
