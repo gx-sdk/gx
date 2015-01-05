@@ -238,9 +238,13 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
 
             '.' => Some(Token::Dot),
             ',' => Some(Token::Comma),
-            ':' => Some(Token::Colon),
             ';' => Some(Token::Semicolon),
             '?' => Some(Token::Question),
+
+            ':' => match self.getc_or_zero() {
+                ':' => Some(Token::DblColon),
+                d   => { self.ungetc(d); Some(Token::Colon) }
+            },
 
             '=' => match self.getc_or_zero() {
                 '=' => Some(Token::Eq),

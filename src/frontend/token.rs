@@ -30,9 +30,11 @@ pub enum Token {
 
     Dot,         // .
     Comma,       // ,
-    Colon,       // :
     Semicolon,   // ;
     Question,    // ?
+
+    Colon,       // :
+    DblColon,    // ::
 
     LArr,        // <-
     RArr,        // ->
@@ -163,9 +165,11 @@ impl Token {
 
             Token::Dot =>           TokenAttr("'.'",   "."),
             Token::Comma =>         TokenAttr("','",   ","),
-            Token::Colon =>         TokenAttr("':'",   ":"),
             Token::Semicolon =>     TokenAttr("';'",   ";"),
             Token::Question =>      TokenAttr("'?'",   "?"),
+
+            Token::Colon =>         TokenAttr("':'",   ":"),
+            Token::DblColon =>      TokenAttr("'::'",  "::"),
 
             Token::LArr =>          TokenAttr("'<-'",  "<-"),
             Token::RArr =>          TokenAttr("'->'",  "->"),
