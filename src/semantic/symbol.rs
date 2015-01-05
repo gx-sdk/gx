@@ -86,4 +86,20 @@ impl<'a> SymbolTable<'a> {
             up:    Some(up),
         }
     }
+
+    /// Traverses the tree upward looking for a symbol with the given name
+    pub fn get(&'a self, k: &str) -> Option<&'a Symbol<'a>> {
+        match self.tab.get(k) {
+            Some(sym) => Some(sym),
+            None => match self.up {
+                Some(up) => up.get(k),
+                None => None,
+            },
+        }
+    }
+
+    /// Performs lookup only in this table
+    pub fn get_here(&'a self, k: &str) -> Option<&'a Symbol<'a>> {
+        self.tab.get(k)
+    }
 }
