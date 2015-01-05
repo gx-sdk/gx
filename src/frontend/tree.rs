@@ -151,6 +151,7 @@ pub enum Expr {
     Unary          (UnOp, Box<Expr>),
     Call           (Box<Expr>, Vec<Expr>),
     Member         (Box<Expr>, Id),
+    Scoped         (Box<Expr>, Id),
     Id             (Id),
     Number         (Number),
 }
@@ -699,7 +700,14 @@ impl Expr {
                 ex.dump(d);
                 d.put_ln(format!("member: {}", id));
                 d.pop();
-            }
+            },
+
+            Expr::Scoped(box ref ex, ref id) => {
+                d.push_str("Expr::Scoped");
+                ex.dump(d);
+                d.put_ln(format!("field: {}", id));
+                d.pop();
+            },
 
             Expr::Id(ref nm) =>
                 d.put_ln(format!("Expr::Id({})", nm)),

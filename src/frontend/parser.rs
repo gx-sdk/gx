@@ -961,6 +961,8 @@ impl <It: Iterator<Token>> Parser<It> {
                 },
                 Token::Dot =>
                     left = Expr::Member(box left, self.id()),
+                Token::DblColon =>
+                    left = Expr::Scoped(box left, self.id()),
 
                 tok =>
                     { self.untok(tok); return left }

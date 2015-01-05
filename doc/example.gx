@@ -15,7 +15,6 @@ unit Invaders {
 	}
 
 	var ram region(state, game) score: u16;
-	var score: u16;
 
 	fn updateAlien(a: *Alien) {
 		if (a.flags.dead)
@@ -24,10 +23,16 @@ unit Invaders {
 		a.x   += a.vx;
 		a.y   += a.vy;
 		a.vy  += ALIEN_GRAVITY;
+
+		Player::score ++;
 	}
 
 	pub fn updateAllAliens() {
 		for (a in aliens)
 			updateAlien(a);
 	}
+}
+
+unit Player {
+	pub var score: u16;
 }

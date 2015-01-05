@@ -183,6 +183,7 @@ thinking...
                      | <ex-primary> ( <ex-list> )
                      | <ex-primary> [ <expr> ]
                      | <ex-primary> . <ex-bottom>
+                     | <ex-primary> :: <ex-bottom>
       <ex-primary> ::= <id>
                      | <constant>
                      | ( <expr> )
