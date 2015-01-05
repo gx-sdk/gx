@@ -5,3 +5,4 @@
 // in the project root
 
 pub mod types;
+pub mod program;
