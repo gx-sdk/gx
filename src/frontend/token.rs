@@ -4,6 +4,8 @@
 // For licensing information, refer to the COPYING file
 // in the project root
 
+//! Big list of tokens. In its own module because it's a really big list.
+
 #[deriving(Show,PartialEq)]
 pub enum Token {
     /// This will never be yielded from the lexer; it is used internally to
