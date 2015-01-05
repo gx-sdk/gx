@@ -184,6 +184,10 @@ pub struct DumpContext {
 impl Copy for DumpContext {
 }
 
+pub trait Dumpable {
+    fn dump(&self, d: &mut DumpContext);
+}
+
 impl DumpContext {
     pub fn new() -> DumpContext {
         DumpContext {
@@ -243,8 +247,8 @@ impl DumpContext {
     }
 }
 
-impl Unit {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for Unit {
+    fn dump(&self, d: &mut DumpContext) {
         d.push_str("Unit");
         d.put_ln(format!("name: {}", self.name));
         for decl in self.decls.iter() {
@@ -254,8 +258,8 @@ impl Unit {
     }
 }
 
-impl Decl {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for Decl {
+    fn dump(&self, d: &mut DumpContext) {
         d.push_str("Decl");
         d.put_ln(format!("pub: {}", self.is_pub));
         self.body.dump(d);
@@ -263,8 +267,8 @@ impl Decl {
     }
 }
 
-impl DeclBody {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for DeclBody {
+    fn dump(&self, d: &mut DumpContext) {
         match *self {
             DeclBody::Type(ref x) => {
                 d.push_str("DeclBody::Type");
@@ -291,8 +295,8 @@ impl DeclBody {
     }
 }
 
-impl TypeDecl {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for TypeDecl {
+    fn dump(&self, d: &mut DumpContext) {
         d.push_str("TypeDecl");
         d.put_ln(format!("name: {}", self.name));
         self.typ.dump(d);
@@ -300,8 +304,8 @@ impl TypeDecl {
     }
 }
 
-impl TypeSpec {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for TypeSpec {
+    fn dump(&self, d: &mut DumpContext) {
         match *self {
             TypeSpec::Alias(ref x) => {
                 d.put_ln(format!("TypeSpec::Alias({})", x));
@@ -310,7 +314,7 @@ impl TypeSpec {
                 d.push_str("TypeSpec::Parameterized");
                 d.put_ln(format!("id: {}", x));
                 for t in y.iter() {
-                    //t.dump(d);
+                    t.dump(d);
                 }
                 d.pop();
             },
@@ -347,8 +351,8 @@ impl TypeSpec {
     }
 }
 
-impl BitvecMember {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for BitvecMember {
+    fn dump(&self, d: &mut DumpContext) {
         match *self {
             BitvecMember::Literal(n, w) =>
                 d.put_ln(format!("{} : {}", n, w)),
@@ -358,8 +362,8 @@ impl BitvecMember {
     }
 }
 
-impl GlobalVarDecl {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for GlobalVarDecl {
+    fn dump(&self, d: &mut DumpContext) {
         d.push_str("GlobalVarDecl");
         self.storage.dump(d);
         self.decl.dump(d);
@@ -367,8 +371,8 @@ impl GlobalVarDecl {
     }
 }
 
-impl Storage {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for Storage {
+    fn dump(&self, d: &mut DumpContext) {
         d.push_str("Storage");
         self.loc.dump(d);
         for p in self.params.iter() {
@@ -378,8 +382,8 @@ impl Storage {
     }
 }
 
-impl StorageLoc {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for StorageLoc {
+    fn dump(&self, d: &mut DumpContext) {
         d.put_ln_str(match *self {
             StorageLoc::Default => "StorageLoc::Default",
             StorageLoc::RAM     => "StorageLoc::RAM",
@@ -388,8 +392,8 @@ impl StorageLoc {
     }
 }
 
-impl StorageParam {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for StorageParam {
+    fn dump(&self, d: &mut DumpContext) {
         match *self {
             StorageParam::Region(ref nm) => {
                 d.push_str("StorageParam::Region");
@@ -400,7 +404,7 @@ impl StorageParam {
                 d.push_str("StorageParam::Ext");
                 d.put_ln(format!("id: {}", id));
                 for ex in v.iter() {
-                    //ex.dump(d);
+                    ex.dump(d);
                 }
                 d.pop();
             },
@@ -408,8 +412,8 @@ impl StorageParam {
     }
 }
 
-impl VarDecl {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for VarDecl {
+    fn dump(&self, d: &mut DumpContext) {
         d.push_str("VarDecl");
         if self.ids.len() == 1 {
             d.put_ln(format!("id: {}", self.ids[0]));
@@ -422,25 +426,25 @@ impl VarDecl {
         }
         self.typ.dump(d);
         match self.init {
-            Some(ref x)  => { }, //x.dump(d),
+            Some(ref x)  => x.dump(d),
             None         => { },
         }
         d.pop();
     }
 }
 
-impl ConstDecl {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for ConstDecl {
+    fn dump(&self, d: &mut DumpContext) {
         d.push_str("ConstDecl");
         d.put_ln(format!("id: {}", self.id));
         self.typ.dump(d);
-        //self.init.dump(d);
+        self.init.dump(d);
         d.pop();
     }
 }
 
-impl RegionDecl {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for RegionDecl {
+    fn dump(&self, d: &mut DumpContext) {
         d.push_str("RegionDecl");
         self.name.dump(d);
         for v in self.vars.iter() {
@@ -450,14 +454,14 @@ impl RegionDecl {
     }
 }
 
-impl RegionName {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for RegionName {
+    fn dump(&self, d: &mut DumpContext) {
         d.put_ln(format!("region({}, {})", self.section, self.layer));
     }
 }
 
-impl FuncDecl {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for FuncDecl {
+    fn dump(&self, d: &mut DumpContext) {
         d.push_str("FuncDecl");
         d.put_ln(self.name.clone());
         for p in self.params.iter() {
@@ -472,8 +476,8 @@ impl FuncDecl {
     }
 }
 
-impl FuncParam {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for FuncParam {
+    fn dump(&self, d: &mut DumpContext) {
         for id in self.ids.iter() {
             d.push_str("FuncParam");
             d.put_ln(format!("id: {}", id));
@@ -483,12 +487,12 @@ impl FuncParam {
     }
 }
 
-impl Stmt {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for Stmt {
+    fn dump(&self, d: &mut DumpContext) {
         match *self {
             Stmt::Eval(ref ex) => {
                 d.push_str("Stmt::Eval");
-                //ex.dump(d);
+                ex.dump(d);
                 d.pop();
             },
             Stmt::Compound(ref v) => {
@@ -520,7 +524,7 @@ impl Stmt {
                 match *t {
                     Some(ref ex) => {
                         d.push_str("Stmt::Return");
-                        //ex.dump(d);
+                        ex.dump(d);
                         d.pop();
                     },
                     None => {
@@ -532,10 +536,10 @@ impl Stmt {
     }
 }
 
-impl IfStmt {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for IfStmt {
+    fn dump(&self, d: &mut DumpContext) {
         d.push_str("IfStmt");
-        //self.cond.dump(d);
+        self.cond.dump(d);
         self.tb.dump(d);
         match self.fb {
             Some(box ref st)  => st.dump(d),
@@ -545,10 +549,10 @@ impl IfStmt {
     }
 }
 
-impl SwitchStmt {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for SwitchStmt {
+    fn dump(&self, d: &mut DumpContext) {
         d.push_str("SwitchStmt");
-        //self.ex.dump(d);
+        self.ex.dump(d);
         for c in self.cases.iter() {
             c.dump(d);
         }
@@ -556,12 +560,12 @@ impl SwitchStmt {
     }
 }
 
-impl SwitchCase {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for SwitchCase {
+    fn dump(&self, d: &mut DumpContext) {
         match *self {
             SwitchCase::Case(ref x, ref st) => {
                 d.push_str("SwitchCase::Case");
-                //x.dump(d);
+                x.dump(d);
                 st.dump(d);
                 d.pop();
             },
@@ -574,36 +578,35 @@ impl SwitchCase {
     }
 }
 
-impl LoopStmt {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for LoopStmt {
+    fn dump(&self, d: &mut DumpContext) {
         d.push_str("LoopStmt");
         self.body.dump(d);
         d.pop();
     }
 }
 
-impl WhileStmt {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for WhileStmt {
+    fn dump(&self, d: &mut DumpContext) {
         d.push_str("WhileStmt");
-        //self.cond.dump(d);
+        self.cond.dump(d);
         self.body.dump(d);
         d.pop();
     }
 }
 
-impl ForStmt {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl Dumpable for ForStmt {
+    fn dump(&self, d: &mut DumpContext) {
         d.push_str("ForStmt");
         d.put_ln(format!("id: {}", self.id));
-        //self.iter.dump(d);
+        self.iter.dump(d);
         self.body.dump(d);
         d.pop();
     }
 }
 
-/*
-impl Expr {
-    pub fn dump(&self, d: &mut DumpContext) {
+impl<P: Dumpable> Dumpable for Expr<P> {
+    fn dump(&self, d: &mut DumpContext) {
         match *self {
             Expr::Comma(ref v) => {
                 d.push_str("Expr::Comma");
@@ -613,7 +616,7 @@ impl Expr {
                 d.pop();
             },
 
-            Expr::Assign(box ref to, box ref fr, ref op) => {
+            Expr::Assign(ref op, box ref to, box ref fr) => {
                 d.push_str("Expr::Assign");
                 to.dump(d);
                 fr.dump(d);
@@ -660,19 +663,27 @@ impl Expr {
                 d.pop();
             },
 
-            Expr::Scoped(box ref ex, ref id) => {
+            Expr::Primary(ref p) =>
+                p.dump(d),
+        }
+    }
+}
+
+impl Dumpable for Primary {
+    fn dump (&self, d: &mut DumpContext) {
+        match *self {
+            Primary::Scoped(box ref p, ref id) => {
                 d.push_str("Expr::Scoped");
-                ex.dump(d);
+                p.dump(d);
                 d.put_ln(format!("field: {}", id));
                 d.pop();
             },
 
-            Expr::Id(ref nm) =>
-                d.put_ln(format!("Expr::Id({})", nm)),
+            Primary::Id(ref id) =>
+                d.put_ln(format!("Primary::Id({})", id)),
 
-            Expr::Number(n) =>
-                d.put_ln(format!("Expr::Number({})", n)),
+            Primary::Number(n) =>
+                d.put_ln(format!("Primary::Number({})", n)),
         }
     }
 }
-*/
