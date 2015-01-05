@@ -5,8 +5,11 @@
 // in the project root
 
 #![feature(globs)]
-
 #![experimental = "awaiting end-to-end implementation"]
+
+//! This crate and all its modules are the components of the reference
+//! implementation of the `gx` language. A small driver program is provided
+//! as well that is invoked by the `gx` executable.
 
 pub mod frontend;
 pub mod semantic;
