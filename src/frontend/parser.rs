@@ -6,13 +6,6 @@
 
 //! Parser for the `gx` language. Internally is a mostly recursive descent
 //! parser, with some PEG-like functions to handle associativity correctly.
-//! For a reasonably up-to-date resource summarizing the grammar, refer
-//! to [`doc/GRAMMAR` in the `gx` tree][grammar], but be warned that this
-//! file is both messy and liable to go out of date. Eventually the grammar
-//! will be transcribed as an appendix in [the gx specification][spec].
-//!
-//! [grammar]: http://github.com/gx-sdk/gx/blob/master/doc/GRAMMAR
-//! [spec]: http://github.com/gx-sdk/gx-spec
 
 use frontend::token::Token;
 use frontend::tree::*;
@@ -88,6 +81,10 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// id-list -> id ',' id-list
+    ///          | id
+    /// ```
     pub fn id_list(&mut self) -> Vec<Id> {
         let mut v = Vec::new();
 
@@ -101,6 +98,10 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// constant-list -> constant ',' constant-list
+    ///                | constant
+    /// ```
     pub fn constant_list(&mut self) -> Vec<Expr<Primary>> {
         let mut v = Vec::new();
 
@@ -114,6 +115,9 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// file -> file' EOF
+    /// ```
     pub fn file(&mut self) -> Input {
         let v = self.file_p();
         self.expect(Token::EOF);
@@ -121,6 +125,10 @@ impl <It: Iterator<Token>> Parser<It> {
         v
     }
 
+    /// ```plain
+    /// file' -> unit file'
+    ///        | ə
+    /// ```
     pub fn file_p(&mut self) -> Input {
         let mut v = Vec::new();
 
@@ -132,6 +140,9 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// unit -> 'unit' id '{' decl-list '}'
+    /// ```
     pub fn unit(&mut self) -> Unit {
         self.expect(Token::Unit);
         let name = self.id();
@@ -145,6 +156,10 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// decl-list -> decl decl-list
+    ///            | ə
+    /// ```
     pub fn decl_list(&mut self) -> Vec<Decl> {
         let mut v = Vec::new();
 
@@ -156,7 +171,7 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn decl_o(&mut self) -> Option<Decl> {
+    fn decl_o(&mut self) -> Option<Decl> {
         match *self.peek() {
             Token::Pub     |
             Token::Type    |
@@ -170,6 +185,10 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// decl -> decl-scope decl-body
+    /// decl-scope -> pub | ə
+    /// ```
     pub fn decl(&mut self) -> Decl {
         let is_pub = match self.gettok() {
             Token::Pub     => true,
@@ -182,6 +201,13 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// decl-body -> type-decl
+    ///            | func-decl
+    ///            | global-var-decl
+    ///            | const-decl
+    ///            | region-decl
+    /// ```
     pub fn decl_body(&mut self) -> DeclBody {
         match *self.peek() {
             Token::Type    => DeclBody::Type      (self.type_decl()),
@@ -193,6 +219,9 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// type-decl -> 'type' id ':' type-spec ';'
+    /// ```
     pub fn type_decl(&mut self) -> TypeDecl {
         self.expect(Token::Type);
         let name = self.id();
@@ -206,12 +235,14 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    // type-spec  -> id
-    //            -> id '<' constant-list '>'
-    //            -> '*' type-spec
-    //            -> '[' number ']' type-spec
-    //            -> struct-spec
-    //            -> bitvec-spec
+    /// ```plain
+    /// type-spec -> id
+    ///            | id '<' constant-list '>'
+    ///            | '*' type-spec
+    ///            | '[' number ']' type-spec
+    ///            | struct-spec
+    ///            | bitvec-spec
+    /// ```
     pub fn type_spec(&mut self) -> TypeSpec {
         match self.gettok() {
             Token::Identifier(id) => {
@@ -253,6 +284,11 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// struct-spec -> 'struct' '{' struct-body '}'
+    /// struct-body -> var-decl struct-body
+    ///              | ə
+    /// ```
     pub fn struct_spec(&mut self) -> TypeSpec {
         self.expect(Token::Struct);
         self.expect(Token::LBrace);
@@ -271,6 +307,12 @@ impl <It: Iterator<Token>> Parser<It> {
         TypeSpec::Struct(body)
     }
 
+    /// ```plain
+    /// bitvec-spec -> 'bitvec' bitvec-size '(' bitvec-body ')'
+    /// bitvec-size -> '<' number '>' | ə
+    /// bitvec-body -> bitvec-member ',' bitvec-body
+    ///              | bitvec-member
+    /// ```
     pub fn bitvec_spec(&mut self) -> TypeSpec {
         self.expect(Token::Bitvec);
 
@@ -302,6 +344,10 @@ impl <It: Iterator<Token>> Parser<It> {
         TypeSpec::Bitvec(size, body)
     }
 
+    /// ```plain
+    /// bitvec-member -> number ':' number
+    ///                | id ':' number
+    /// ```
     pub fn bitvec_member(&mut self) -> BitvecMember {
         match self.gettok() {
             Token::Identifier(x) => {
@@ -319,13 +365,16 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn global_var_decl_o(&mut self) -> Option<GlobalVarDecl> {
+    fn global_var_decl_o(&mut self) -> Option<GlobalVarDecl> {
         match *self.peek() {
             Token::Var  => Some(self.global_var_decl()),
             _           => None,
         }
     }
 
+    /// ```plain
+    /// global-var-decl -> 'var' storage var-decl
+    /// ```
     pub fn global_var_decl(&mut self) -> GlobalVarDecl {
         self.expect(Token::Var);
 
@@ -335,6 +384,9 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// storage -> storage-loc storage-params
+    /// ```
     pub fn storage(&mut self) -> Storage {
         Storage {
             loc:       self.storage_loc(),
@@ -342,6 +394,9 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// storage-loc -> ram | rom | ə
+    /// ```
     pub fn storage_loc(&mut self) -> StorageLoc {
         match self.gettok() {
             Token::Ram => StorageLoc::RAM,
@@ -350,6 +405,10 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// storage-params -> storage-param storage-params
+    ///                 | ə
+    /// ```
     pub fn storage_params(&mut self) -> Vec<StorageParam> {
         let mut params = Vec::new();
 
@@ -361,20 +420,27 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn storage_param_o(&mut self) -> Option<StorageParam> {
+    /// ```plain
+    /// storage-param -> region-name
+    /// ```
+    fn storage_param_o(&mut self) -> Option<StorageParam> {
         match *self.peek() {
             Token::Region  => Some(StorageParam::Region(self.region_name())),
             _              => None,
         }
     }
 
-    pub fn var_decl_o(&mut self) -> Option<VarDecl> {
+    fn var_decl_o(&mut self) -> Option<VarDecl> {
         match *self.peek() {
             Token::Identifier(_)  => Some(self.var_decl()),
             _                     => None
         }
     }
 
+    /// ```plain
+    /// var-decl -> id-list ':' type-spec ';'
+    ///           | id ':' type-spec '=' expr ';'
+    /// ```
     pub fn var_decl(&mut self) -> VarDecl {
         let ids = self.id_list();
         self.expect(Token::Colon);
@@ -396,6 +462,9 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// const-decl -> 'const' id ':' type-spec '=' constant ';'
+    /// ```
     pub fn const_decl(&mut self) -> ConstDecl {
         self.expect(Token::Const);
         let id = self.id();
@@ -412,6 +481,9 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// region-decl -> region-name '{' region-decl-body '}'
+    /// ```
     pub fn region_decl(&mut self) -> RegionDecl {
         let name = self.region_name();
         self.expect(Token::LBrace);
@@ -424,6 +496,9 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// region-name -> 'region' '(' id ',' id ')'
+    /// ```
     pub fn region_name(&mut self) -> RegionName {
         self.expect(Token::Region);
         self.expect(Token::LParen);
@@ -438,6 +513,9 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// region-decl-body -> global-var-decl region-decl-body | ə
+    /// ```
     pub fn region_decl_body(&mut self) -> Vec<GlobalVarDecl> {
         let mut body = Vec::new();
 
@@ -449,6 +527,10 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// func-decl -> func-heading '{' func-body '}'
+    /// func-heading -> 'fn' id '(' func-params ')' func-return
+    /// ```
     pub fn func_decl(&mut self) -> FuncDecl {
         self.expect(Token::Fn);
         let name = self.id();
@@ -468,6 +550,9 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// func-return -> ':' type-spec | ə
+    /// ```
     pub fn func_return(&mut self) -> Option<TypeSpec> {
         match self.gettok() {
             Token::Colon => Some(self.type_spec()),
@@ -475,6 +560,11 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// func-params -> func-params' | ə
+    /// func-params' -> func-param ',' func-params'
+    ///               | func-param
+    /// ```
     pub fn func_params(&mut self) -> Vec<FuncParam> {
         let mut params = Vec::new();
 
@@ -491,13 +581,16 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn func_param_o(&mut self) -> Option<FuncParam> {
+    fn func_param_o(&mut self) -> Option<FuncParam> {
         match *self.peek() {
             Token::Identifier(_) => Some(self.func_param()),
             _                    => None,
         }
     }
 
+    /// ```plain
+    /// func-param -> id-list ':' type-spec
+    /// ```
     pub fn func_param(&mut self) -> FuncParam {
         let ids = self.id_list();
         self.expect(Token::Colon);
@@ -508,6 +601,9 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// stmt-list -> stmt stmt-list | ə
+    /// ```
     pub fn stmt_list(&mut self) -> Stmt {
         let mut stmts = Vec::new();
 
@@ -519,7 +615,7 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn stmt_o(&mut self) -> Option<Stmt> {
+    fn stmt_o(&mut self) -> Option<Stmt> {
         let tok = self.gettok();
 
         match tok {
@@ -574,6 +670,21 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// stmt -> expr ';'
+    ///       | '{' stmt-list '}'
+    ///       | 'var' var-decl
+    ///       | if-stmt
+    ///       | switch-stmt
+    ///       | loop-stmt
+    ///       | while-stmt
+    ///       | for-stmt
+    ///       | 'break' ';'
+    ///       | 'continue' ';'
+    ///       | 'repeat' ';'
+    ///       | 'return' ';'
+    ///       | 'return' expr ';'
+    /// ```
     pub fn stmt(&mut self) -> Stmt {
         match self.stmt_o() {
             Some(x)  => x,
@@ -581,11 +692,15 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn stmt_simple_o(&mut self, stmt: Stmt) -> Option<Stmt> {
+    fn stmt_simple_o(&mut self, stmt: Stmt) -> Option<Stmt> {
         self.expect(Token::Semicolon);
         Some(stmt)
     }
 
+    /// ```plain
+    /// if-stmt -> if '(' expr ')' stmt
+    ///          | if '(' expr ')' stmt 'else' stmt
+    /// ```
     pub fn if_stmt(&mut self) -> Stmt {
         self.expect(Token::If);
         self.expect(Token::LParen);
@@ -604,6 +719,9 @@ impl <It: Iterator<Token>> Parser<It> {
         })
     }
 
+    /// ```plain
+    /// switch-stmt -> 'switch' '(' expr ')' '{' switch-body '}'
+    /// ```
     pub fn switch_stmt(&mut self) -> Stmt {
         self.expect(Token::Switch);
         self.expect(Token::LParen);
@@ -619,6 +737,9 @@ impl <It: Iterator<Token>> Parser<It> {
         })
     }
 
+    /// ```plain
+    /// switch-body -> switch-case switch-body | ə
+    /// ```
     pub fn switch_body(&mut self) -> Vec<SwitchCase> {
         let mut body = Vec::new();
 
@@ -630,13 +751,17 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
-    pub fn switch_case_o(&mut self) -> Option<SwitchCase> {
+    fn switch_case_o(&mut self) -> Option<SwitchCase> {
         match *self.peek() {
             Token::Case | Token::Default => Some(self.switch_case()),
             _ => None,
         }
     }
 
+    /// ```plain
+    /// switch-case -> 'case' const ':' stmt-list
+    ///              | 'default' ':' stmt-list
+    /// ```
     pub fn switch_case(&mut self) -> SwitchCase {
         match self.gettok() {
             Token::Case => {
@@ -654,6 +779,9 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// loop-stmt -> 'loop' stmt
+    /// ```
     pub fn loop_stmt(&mut self) -> Stmt {
         self.expect(Token::Loop);
 
@@ -662,6 +790,9 @@ impl <It: Iterator<Token>> Parser<It> {
         })
     }
 
+    /// ```plain
+    /// while-stmt -> 'while' '(' expr ')' stmt
+    /// ```
     pub fn while_stmt(&mut self) -> Stmt {
         self.expect(Token::While);
         self.expect(Token::LParen);
@@ -674,6 +805,9 @@ impl <It: Iterator<Token>> Parser<It> {
         })
     }
 
+    /// ```plain
+    /// for-stmt -> 'for' '(' id 'in' expr ')' stmt
+    /// ```
     pub fn for_stmt(&mut self) -> Stmt {
         self.expect(Token::For);
         self.expect(Token::LParen);
@@ -689,10 +823,18 @@ impl <It: Iterator<Token>> Parser<It> {
         })
     }
 
+    /// ```plain
+    /// expr -> ex-comma
+    /// ```
     pub fn expr(&mut self) -> Expr<Primary> {
         self.ex_comma()
     }
 
+    /// ```plain
+    /// ex-list -> ex-list' | ə
+    /// ex-list' -> ex-assign ',' ex-list'
+    ///           | ex-assign
+    /// ```
     pub fn ex_list(&mut self) -> Vec<Expr<Primary>> {
         let mut list = Vec::new();
 
@@ -713,6 +855,10 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// ex-comma -> ex-assign
+    ///           | ex-assign , ex-comma
+    /// ```
     pub fn ex_comma(&mut self) -> Expr<Primary> {
         let left = self.ex_assign();
 
@@ -732,6 +878,20 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// ex-assign -> ex-tern
+    ///            | ex-tern '=' ex-assign
+    ///            | ex-tern '+=' ex-assign
+    ///            | ex-tern '-=' ex-assign
+    ///            | ex-tern '*=' ex-assign
+    ///            | ex-tern '/=' ex-assign
+    ///            | ex-tern '%=' ex-assign
+    ///            | ex-tern '<<=' ex-assign
+    ///            | ex-tern '>>=' ex-assign
+    ///            | ex-tern '&=' ex-assign
+    ///            | ex-tern '^=' ex-assign
+    ///            | ex-tern '|=' ex-assign
+    /// ```
     pub fn ex_assign(&mut self) -> Expr<Primary> {
         let left = self.ex_tern();
 
@@ -759,6 +919,10 @@ impl <It: Iterator<Token>> Parser<It> {
         )
     }
 
+    /// ```plain
+    /// ex-tern -> ex-lor
+    ///          | ex-lor '?' ex-lor ':' ex-tern
+    /// ```
     pub fn ex_tern(&mut self) -> Expr<Primary> {
         let left = self.ex_lor();
 
@@ -778,6 +942,10 @@ impl <It: Iterator<Token>> Parser<It> {
         )
     }
 
+    /// ```plain
+    /// ex-lor -> ex-land
+    ///         | ex-lor '||' ex-land
+    /// ```
     pub fn ex_lor(&mut self) -> Expr<Primary> {
         let mut left = self.ex_land();
 
@@ -791,6 +959,10 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// ex-land -> ex-bor
+    ///          | ex-land '&&' ex-bor
+    /// ```
     pub fn ex_land(&mut self) -> Expr<Primary> {
         let mut left = self.ex_bor();
 
@@ -804,6 +976,10 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// ex-bor -> ex-bxor
+    ///         | ex-bor '|' ex-bxor
+    /// ```
     pub fn ex_bor(&mut self) -> Expr<Primary> {
         let mut left = self.ex_bxor();
 
@@ -817,6 +993,10 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// ex-bxor -> ex-band
+    ///          | ex-bxor '^' ex-band
+    /// ```
     pub fn ex_bxor(&mut self) -> Expr<Primary> {
         let mut left = self.ex_band();
 
@@ -830,6 +1010,10 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// ex-band -> ex-eq
+    ///          | ex-band '&' ex-eq
+    /// ```
     pub fn ex_band(&mut self) -> Expr<Primary> {
         let mut left = self.ex_eq();
 
@@ -843,6 +1027,11 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// ex-eq -> ex-cmp
+    ///        | ex-eq '==' ex-cmp
+    ///        | ex-eq '!=' ex-cmp
+    /// ```
     pub fn ex_eq(&mut self) -> Expr<Primary> {
         let mut left = self.ex_cmp();
 
@@ -859,6 +1048,13 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// ex-cmp -> ex-shift
+    ///         | ex-cmp '<' ex-shift
+    ///         | ex-cmp '>' ex-shift
+    ///         | ex-cmp '<=' ex-shift
+    ///         | ex-cmp '>=' ex-shift
+    /// ```
     pub fn ex_cmp(&mut self) -> Expr<Primary> {
         let mut left = self.ex_shift();
 
@@ -879,6 +1075,11 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// ex-shift -> ex-add
+    ///           | ex-shift '<<' ex-add
+    ///           | ex-shift '>>' ex-add
+    /// ```
     pub fn ex_shift(&mut self) -> Expr<Primary> {
         let mut left = self.ex_add();
 
@@ -895,6 +1096,11 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// ex-add -> ex-mul
+    ///         | ex-add '+' ex-mul
+    ///         | ex-add '-' ex-mul
+    /// ```
     pub fn ex_add(&mut self) -> Expr<Primary> {
         let mut left = self.ex_mul();
 
@@ -911,6 +1117,12 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// ex-mul -> ex-unary
+    ///         | ex-mul '*' ex-unary
+    ///         | ex-mul '/' ex-unary
+    ///         | ex-mul '%' ex-unary
+    /// ```
     pub fn ex_mul(&mut self) -> Expr<Primary> {
         let mut left = self.ex_unary();
 
@@ -929,6 +1141,16 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// ex-unary -> '++' ex-unary
+    ///           | '--' ex-unary
+    ///           | '!' ex-unary
+    ///           | '~' ex-unary
+    ///           | '*' ex-unary
+    ///           | '&' ex-unary
+    ///           | 'sizeof' ex-unary
+    ///           | ex-bottom
+    /// ```
     pub fn ex_unary(&mut self) -> Expr<Primary> {
         match self.gettok() {
             Token::Incr =>
@@ -951,6 +1173,14 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// ex-bottom -> ex-primary
+    ///            | ex-primary '++'
+    ///            | ex-primary '--'
+    ///            | ex-primary '(' ex-list ')'
+    ///            | ex-primary '.' ex-bottom
+    ///            | ex-primary '::' id
+    /// ```
     pub fn ex_bottom(&mut self) -> Expr<Primary> {
         let mut left = self.ex_primary();
 
@@ -984,6 +1214,11 @@ impl <It: Iterator<Token>> Parser<It> {
         }
     }
 
+    /// ```plain
+    /// ex-primary -> id
+    ///            -> constant
+    ///            -> '(' expr ')'
+    /// ```
     pub fn ex_primary(&mut self) -> Expr<Primary> {
         match self.gettok() {
             Token::Identifier(x) =>
