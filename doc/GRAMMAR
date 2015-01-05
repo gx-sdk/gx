@@ -17,7 +17,8 @@ thinking...
                      | <constant>
 
 
-            <file> ::= <unit> <file>
+            <file> ::= <file'> EOF
+           <file'> ::= <unit> <file'>
                      | \e
             <unit> ::= unit <id> { <decl-list> }
 

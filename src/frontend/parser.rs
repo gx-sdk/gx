@@ -115,6 +115,13 @@ impl <It: Iterator<Token>> Parser<It> {
     }
 
     pub fn file(&mut self) -> Input {
+        let v = self.file_p();
+        self.expect(Token::EOF);
+
+        v
+    }
+
+    pub fn file_p(&mut self) -> Input {
         let mut v = Vec::new();
 
         loop {
