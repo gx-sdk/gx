@@ -8,11 +8,6 @@
 
 #[deriving(Show,PartialEq)]
 pub enum Token {
-    /// This will never be yielded from the lexer; it is used internally to
-    /// indicate that another iteration of the input loop is needed. TODO:
-    /// Reimplement the places Token::Ignore is used in terms of Option<>
-    Ignore,
-
     // parameterized token types
 
     Number(uint),
@@ -149,8 +144,6 @@ impl Copy for TokenAttr {
 impl Token {
     pub fn attrs(&self) -> TokenAttr {
         match *self {
-            Token::Ignore =>        TokenAttr("Token::Ignore", "Token::Ignore"),
-
             Token::Number(_) =>     TokenAttr("number literal", "(num)"),
             Token::Identifier(_) => TokenAttr("identifier", "(id)"),
             Token::String(_) =>     TokenAttr("string literal", "(str)"),

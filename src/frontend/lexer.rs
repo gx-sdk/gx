@@ -39,6 +39,12 @@ pub struct Lexer<It> {
     line_number: uint,
 }
 
+enum LexerStep {
+    Step(Token),
+    Again,
+    EndOfInput,
+}
+
 impl <It: Iterator<IoResult<char>>> Lexer<It> {
     pub fn new(input: It) -> Lexer<It> {
         Lexer {
@@ -115,7 +121,7 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
         return s;
     }
 
-    fn read_int(&mut self) -> Option<Token> {
+    fn read_int(&mut self) -> LexerStep {
         let s = self.getc_while(|c| {
                 c.is_digit(16) || c == 'x' || c == 'X'
             });
@@ -130,19 +136,19 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
             };
 
         match FromStrRadix::from_str_radix(num, base) {
-            Some(x) => Some(Token::Number(x)),
+            Some(x) => LexerStep::Step(Token::Number(x)),
             None => self.die(
                 format!("invalid base {} constant {}", base, s).as_slice()
                 )
         }
     }
 
-    fn read_identifier(&mut self) -> Option<Token> {
+    fn read_identifier(&mut self) -> LexerStep {
         let s = self.getc_while(|c| { is_identifier_char(c) });
 
         match find_keyword(s.as_slice()) {
-            Some(tok) => Some(tok),
-            None      => Some(Token::Identifier(s)),
+            Some(tok) => LexerStep::Step(tok),
+            None      => LexerStep::Step(Token::Identifier(s)),
         }
     }
 
@@ -168,7 +174,7 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
         }
     }
 
-    fn read_string(&mut self) -> Option<Token> {
+    fn read_string(&mut self) -> LexerStep {
         let mut s = String::with_capacity(10);
 
         loop {
@@ -186,26 +192,28 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
             }
         }
 
-        Some(Token::String(s))
+        LexerStep::Step(Token::String(s))
     }
 
-    fn read_char(&mut self) -> Option<Token> {
+    fn read_char(&mut self) -> LexerStep {
         let c = self.read_char_expr();
 
         match self.getc() {
-            Some('\'') => Some(Token::Character(c)),
+            Some('\'') => LexerStep::Step(Token::Character(c)),
             _ => self.die("invalid character constant")
         }
     }
 
-    fn try_token(&mut self) -> Option<Token> {
+    fn try_token(&mut self) -> LexerStep {
+        use self::LexerStep::*;
+
         let c = match self.getc() {
             Some(c) => c,
-            None => return None
+            None => return EndOfInput
         };
 
         return if c.is_whitespace() {
-            Some(Token::Ignore)
+            Again
 
         } else if c.is_digit(10) {
             self.ungetc(c);
@@ -217,49 +225,49 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
 
         } else { match c {
             '-' => match self.getc_or_zero() {
-                '>' => Some(Token::RArr),
-                '=' => Some(Token::MinusEq),
-                '-' => Some(Token::Decr),
-                d   => { self.ungetc(d); Some(Token::Minus) }
+                '>' => Step(Token::RArr),
+                '=' => Step(Token::MinusEq),
+                '-' => Step(Token::Decr),
+                d   => { self.ungetc(d); Step(Token::Minus) }
             },
 
             '+' => match self.getc_or_zero() {
-                '+' => Some(Token::Incr),
-                '=' => Some(Token::PlusEq),
-                d   => { self.ungetc(d); Some(Token::Plus) }
+                '+' => Step(Token::Incr),
+                '=' => Step(Token::PlusEq),
+                d   => { self.ungetc(d); Step(Token::Plus) }
             },
 
-            '(' => Some(Token::LParen),
-            ')' => Some(Token::RParen),
-            '[' => Some(Token::LBrack),
-            ']' => Some(Token::RBrack),
-            '{' => Some(Token::LBrace),
-            '}' => Some(Token::RBrace),
+            '(' => Step(Token::LParen),
+            ')' => Step(Token::RParen),
+            '[' => Step(Token::LBrack),
+            ']' => Step(Token::RBrack),
+            '{' => Step(Token::LBrace),
+            '}' => Step(Token::RBrace),
 
-            '.' => Some(Token::Dot),
-            ',' => Some(Token::Comma),
-            ';' => Some(Token::Semicolon),
-            '?' => Some(Token::Question),
+            '.' => Step(Token::Dot),
+            ',' => Step(Token::Comma),
+            ';' => Step(Token::Semicolon),
+            '?' => Step(Token::Question),
 
             ':' => match self.getc_or_zero() {
-                ':' => Some(Token::DblColon),
-                d   => { self.ungetc(d); Some(Token::Colon) }
+                ':' => Step(Token::DblColon),
+                d   => { self.ungetc(d); Step(Token::Colon) }
             },
 
             '=' => match self.getc_or_zero() {
-                '=' => Some(Token::Eq),
-                '>' => Some(Token::RDblArr),
-                d   => { self.ungetc(d); Some(Token::Assign) }
+                '=' => Step(Token::Eq),
+                '>' => Step(Token::RDblArr),
+                d   => { self.ungetc(d); Step(Token::Assign) }
             },
 
             '*' => match self.getc_or_zero() {
-                '=' => Some(Token::StarEq),
-                d   => { self.ungetc(d); Some(Token::Star) }
+                '=' => Step(Token::StarEq),
+                d   => { self.ungetc(d); Step(Token::Star) }
             },
             '/' => match self.getc_or_zero() {
                 '/' => {
                     self.getc_while(|c| { c != '\n' });
-                    Some(Token::Ignore)
+                    Again
                 },
                 '*' => {
                     loop {
@@ -271,62 +279,62 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
                             None => self.die("unexpected end of file"),
                         }
                     }
-                    Some(Token::Ignore)
+                    Again
                 },
-                '=' => Some(Token::SlashEq),
-                d   => { self.ungetc(d); Some(Token::Slash) }
+                '=' => Step(Token::SlashEq),
+                d   => { self.ungetc(d); Step(Token::Slash) }
             },
             '%' => match self.getc_or_zero() {
-                '=' => Some(Token::ModEq),
-                d   => { self.ungetc(d); Some(Token::Mod) }
+                '=' => Step(Token::ModEq),
+                d   => { self.ungetc(d); Step(Token::Mod) }
             },
 
             '~' => match self.getc_or_zero() {
-                '=' => Some(Token::BitNotEq),
-                d   => { self.ungetc(d); Some(Token::Tilde) }
+                '=' => Step(Token::BitNotEq),
+                d   => { self.ungetc(d); Step(Token::Tilde) }
             },
             '&' => match self.getc_or_zero() {
-                '&' => Some(Token::DblAmp),
-                '=' => Some(Token::BitAndEq),
-                d   => { self.ungetc(d); Some(Token::Amp) }
+                '&' => Step(Token::DblAmp),
+                '=' => Step(Token::BitAndEq),
+                d   => { self.ungetc(d); Step(Token::Amp) }
             },
             '|' => match self.getc_or_zero() {
-                '|' => Some(Token::DblPipe),
-                '=' => Some(Token::BitOrEq),
-                d   => { self.ungetc(d); Some(Token::Pipe) }
+                '|' => Step(Token::DblPipe),
+                '=' => Step(Token::BitOrEq),
+                d   => { self.ungetc(d); Step(Token::Pipe) }
             },
             '^' => match self.getc_or_zero() {
-                '=' => Some(Token::BitXorEq),
-                d   => { self.ungetc(d); Some(Token::Caret) }
+                '=' => Step(Token::BitXorEq),
+                d   => { self.ungetc(d); Step(Token::Caret) }
             },
 
             '<' => match self.getc_or_zero() {
-                '-' => Some(Token::LArr),
-                '=' => Some(Token::LessEq),
+                '-' => Step(Token::LArr),
+                '=' => Step(Token::LessEq),
                 '<' => match self.getc_or_zero() {
-                    '=' => Some(Token::LShiftEq),
-                    e   => { self.ungetc(e); Some(Token::LShift) },
+                    '=' => Step(Token::LShiftEq),
+                    e   => { self.ungetc(e); Step(Token::LShift) },
                 },
-                d   => { self.ungetc(d); Some(Token::Less) }
+                d   => { self.ungetc(d); Step(Token::Less) }
             },
 
             '>' => match self.getc_or_zero() {
-                '=' => Some(Token::GreaterEq),
+                '=' => Step(Token::GreaterEq),
                 '>' => match self.getc_or_zero() {
-                    '=' => Some(Token::RShiftEq),
-                    e   => { self.ungetc(e); Some(Token::RShift) },
+                    '=' => Step(Token::RShiftEq),
+                    e   => { self.ungetc(e); Step(Token::RShift) },
                 },
-                d   => { self.ungetc(d); Some(Token::Greater) }
+                d   => { self.ungetc(d); Step(Token::Greater) }
             },
 
             '!' => match self.getc_or_zero() {
-                '=' => Some(Token::NotEq),
-                d   => { self.ungetc(d); Some(Token::Excl) }
+                '=' => Step(Token::NotEq),
+                d   => { self.ungetc(d); Step(Token::Excl) }
             },
 
             '#' => {
                 self.getc_while(|c| { c != '\n' });
-                Some(Token::Ignore)
+                Again
             },
 
             '"' => self.read_string(),
@@ -341,9 +349,9 @@ impl <It: Iterator<IoResult<char>>> Iterator<Token> for Lexer<It> {
     fn next(&mut self) -> Option<Token> {
         loop {
             match self.try_token() {
-                Some(Token::Ignore) => {}
-                Some(x) => return Some(x),
-                None => return None
+                LexerStep::Step(x) => return Some(x),
+                LexerStep::Again => { },
+                LexerStep::EndOfInput => return None
             }
         }
     }
