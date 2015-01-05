@@ -727,17 +727,17 @@ impl <It: Iterator<Token>> Parser<It> {
         let left = self.ex_tern();
 
         let op = match *self.peek() {
-            Token::Assign    => BinOp::Eq,
-            Token::PlusEq    => BinOp::Add,
-            Token::MinusEq   => BinOp::Sub,
-            Token::StarEq    => BinOp::Mul,
-            Token::SlashEq   => BinOp::Div,
-            Token::ModEq     => BinOp::Mod,
-            Token::LShiftEq  => BinOp::LShift,
-            Token::RShiftEq  => BinOp::RShift,
-            Token::BitAndEq  => BinOp::BitAnd,
-            Token::BitXorEq  => BinOp::BitXor,
-            Token::BitOrEq   => BinOp::BitOr,
+            Token::Assign    => None,
+            Token::PlusEq    => Some(BinOp::Add),
+            Token::MinusEq   => Some(BinOp::Sub),
+            Token::StarEq    => Some(BinOp::Mul),
+            Token::SlashEq   => Some(BinOp::Div),
+            Token::ModEq     => Some(BinOp::Mod),
+            Token::LShiftEq  => Some(BinOp::LShift),
+            Token::RShiftEq  => Some(BinOp::RShift),
+            Token::BitAndEq  => Some(BinOp::BitAnd),
+            Token::BitXorEq  => Some(BinOp::BitXor),
+            Token::BitOrEq   => Some(BinOp::BitOr),
             _ => return left,
         };
 

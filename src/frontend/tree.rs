@@ -180,7 +180,7 @@ pub enum Expr {
     /// Assigns the value of the second expression to the location of the
     /// first expression, optionally applying the given binary operation to
     /// the existing value and the value to be assigned before assignment.
-    Assign         (Box<Expr>, Box<Expr>, BinOp),
+    Assign         (Box<Expr>, Box<Expr>, Option<BinOp>),
     /// Evaluates the first expression, and then evaluates only the second or
     /// third depending on whether the first expression had a truth-ish
     /// value. Essentially an expression version of the if statement.
