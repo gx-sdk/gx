@@ -17,7 +17,6 @@ pub enum Token {
     Identifier(String),
     String(String),
     Character(char),
-    BinaryString(String),
 
     // glyphs
 
@@ -154,7 +153,6 @@ impl Token {
             Token::Identifier(_) => TokenAttr("identifier", "(id)"),
             Token::String(_) =>     TokenAttr("string literal", "(str)"),
             Token::Character(_) =>  TokenAttr("character literal", "(char)"),
-            Token::BinaryString(_) => TokenAttr("binary string", "(bin)"),
 
             Token::LParen =>        TokenAttr("'('",   "("),
             Token::RParen =>        TokenAttr("')'",   ")"),
