@@ -324,7 +324,7 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
                 d   => { self.ungetc(d); Some(Token::Excl) }
             },
 
-            '#' => { /* to-eol comment, rofl */
+            '#' => {
                 self.getc_while(|c| { c != '\n' });
                 Some(Token::Ignore)
             },

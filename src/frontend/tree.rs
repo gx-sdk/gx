@@ -29,11 +29,13 @@ pub enum DeclBody {
     Region         (RegionDecl),
 }
 
+/// Declaration of a type alias
 pub struct TypeDecl {
     pub name:      String,
     pub typ:       TypeSpec
 }
 
+/// Type specifier
 pub enum TypeSpec {
     Alias          (Id),
     Parameterized  (Id, Vec<Expr>),
@@ -47,6 +49,7 @@ pub enum BitvecMember {
     Variable       (Id, Number),
 }
 
+/// Global storage declaration
 pub struct GlobalVarDecl {
     pub storage:   Storage,
     pub decl:      VarDecl,
@@ -66,6 +69,7 @@ pub enum StorageParam {
     Region         (RegionName),
     Ext            (Id, Vec<Expr>),
 }
+/// Generic variable declaration
 pub struct VarDecl {
     pub ids:       Vec<Id>,
     pub typ:       TypeSpec,
@@ -98,18 +102,40 @@ pub struct FuncParam {
     pub typ:       TypeSpec,
 }
 
+/// Program statement
 pub enum Stmt {
+    /// Evaluate the given expression and discard the result
     Eval           (Expr),
+    /// Execute the statements in order
     Compound       (Vec<Stmt>),
+    /// Declares a variable. A sort of 'lifting' is performed, akin to
+    /// JavaScript, where declarations are moved to the top of the scope
+    /// they are declared in. However, the initializer is only evaluated
+    /// at the spot where the variable is actually declared
     Var            (VarDecl),
+    /// If statement. Tests a condition and only follows at most one path
     If             (IfStmt),
+    /// Switch statement. Jumps to a label if a set of conditions hold
     Switch         (SwitchStmt),
+    /// Loop statement. Executes a block of code indefinitely.
     Loop           (LoopStmt),
+    /// Repeatedly executes a block of code until a condition is no
+    /// longer true.
     While          (WhileStmt),
+    /// Executes a block of code once for every element of some iterable
+    /// object. The exact semantics of iterability are not part of the
+    /// grammar or parser itself.
     For            (ForStmt),
+    /// Continues execution at the statement immediately following the
+    /// innermost breakable block (loops and switch)
     Break,
+    /// Continues execution at the start of the next iteration of the
+    /// innermost continuable block (loops)
     Continue,
+    /// Continues execution at the beginning of the current iteration of
+    /// the innermost repeatable block (loops)
     Repeat,
+    /// Returns from the containing function.
     Return         (Option<Expr>)
 }
 
@@ -143,58 +169,91 @@ pub struct ForStmt {
     pub body:      Box<Stmt>,
 }
 
+/// An expression. Expressions have some value they evaluate to, which is
+/// often dependent on its parameters. Expressions may also have locations
+/// and side effects.
 pub enum Expr {
+    /// Evaluates the expressions in order, discarding the results of all
+    /// but the last. The result of the last subexpression becomes the result
+    /// of the whole expression.
     Comma          (Vec<Expr>),
+    /// Assigns the value of the second expression to the location of the
+    /// first expression, optionally applying the given binary operation to
+    /// the existing value and the value to be assigned before assignment.
     Assign         (Box<Expr>, Box<Expr>, BinOp),
+    /// Evaluates the first expression, and then evaluates only the second or
+    /// third depending on whether the first expression had a truth-ish
+    /// value. Essentially an expression version of the if statement.
     Ternary        (Box<Expr>, Box<Expr>, Box<Expr>),
+    /// Binary operation. Evaluates the two subexpressions and then combines
+    /// their results by applying the given operation.
     Binary         (BinOp, Box<Expr>, Box<Expr>),
+    /// Unary operation. Evaluates the subexpression and then applies the
+    /// given unary operator.
     Unary          (UnOp, Box<Expr>),
+    /// Evaluates the first expression, and calls it as a function with
+    /// the results of the expressions in the vector as arguments.
     Call           (Box<Expr>, Vec<Expr>),
+    /// Evaluates the expression, then evaluates to the member of the
+    /// resulting value with the given identifier. Has a location.
     Member         (Box<Expr>, Id),
+    /// Evaluates the expression, then evaluates to the member of the
+    /// resulting scope with the given identifier. Has a location.
     Scoped         (Box<Expr>, Id),
+    /// Just an identifier. May or may not have a location. In later passes
+    /// will be resolved to a symbol containing more information.
     Id             (Id),
+    /// Just a number. Does not by itself have a location.
     Number         (Number),
 }
+
+/// Binary operators, from a grammar standpoint. This list is re-implemented
+/// in later passes as needed.
 #[deriving(Show)]
 pub enum BinOp {
-    Add,
-    Sub,
-    Mul,
-    Div,
-    Mod,
-    LShift,
-    RShift,
-    BitAnd,
-    BitOr,
-    BitXor,
-    BoolAnd,
-    BoolOr,
-    Element,
-    Eq,
-    NotEq,
-    Less,
-    Greater,
-    LessEq,
-    GreaterEq,
+    #[doc = "addition"]                         Add,
+    #[doc = "subtraction"]                      Sub,
+    #[doc = "multiplication"]                   Mul,
+    #[doc = "division"]                         Div,
+    #[doc = "modulus"]                          Mod,
+    #[doc = "left shift"]                       LShift,
+    #[doc = "right shift"]                      RShift,
+    #[doc = "bitwise and"]                      BitAnd,
+    #[doc = "bitwise or"]                       BitOr,
+    #[doc = "bitwise exclusive or"]             BitXor,
+    #[doc = "boolean and"]                      BoolAnd,
+    #[doc = "boolean or"]                       BoolOr,
+    #[doc = "element-of (array subscript)"]     Element,
+    #[doc = "equality test"]                    Eq,
+    #[doc = "inequality test"]                  NotEq,
+    #[doc = "less than"]                        Less,
+    #[doc = "greater than"]                     Greater,
+    #[doc = "less than or equal to"]            LessEq,
+    #[doc = "greater than or equal to"]         GreaterEq,
 }
 impl Copy for BinOp {
 }
+
+/// Unary operators, from a grammar standpoint. This list is re-implemented
+/// in later passes as needed.
 #[deriving(Show)]
 pub enum UnOp {
-    PreIncr,
-    PostIncr,
-    PreDecr,
-    PostDecr,
-    AddrOf,
-    Deref,
-    SizeOf,
-    BitNot,
-    BoolNot,
+    #[doc = "pre-incerment"]                    PreIncr,
+    #[doc = "post-increment"]                   PostIncr,
+    #[doc = "pre-decrement"]                    PreDecr,
+    #[doc = "post-decrement"]                   PostDecr,
+    #[doc = "address-of"]                       AddrOf,
+    #[doc = "pointer dereference"]              Deref,
+    #[doc = "sizeof"]                           SizeOf,
+    #[doc = "bitwise negation"]                 BitNot,
+    #[doc = "boolean negation"]                 BoolNot,
 }
 impl Copy for UnOp {
 }
 
 impl BinOp {
+    /// Returns a printable glyph representing the given binary
+    /// operation. Useful mostly for debugging/diagnostic purposes
     pub fn glyph(&self) -> &'static str {
         match *self {
             BinOp::Add         => "+",
