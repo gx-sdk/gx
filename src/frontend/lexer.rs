@@ -13,6 +13,21 @@ use frontend::token::*;
 
 fn is_identifier_char(c: char) -> bool { c.is_alphanumeric() || c == '_' }
 
+fn nib_from_hex(nib: char) -> Result<u8, ()> {
+    match nib {
+        '0'...'9' => Ok(nib as u8 - '0' as u8),
+        'a'...'f' => Ok(nib as u8 - 'a' as u8 + 10),
+        'A'...'F' => Ok(nib as u8 - 'A' as u8 + 10),
+        _ => Err(()),
+    }
+}
+
+fn byte_from_hex_pair(hi: char, lo: char) -> Result<u8, ()> {
+    let top = try!(nib_from_hex(hi));
+    let bot = try!(nib_from_hex(lo));
+    Ok((top << 4) | bot)
+}
+
 /// The Lexer struct is the gx-lang lexer implementation. It implements
 /// the Iterator trait, which yields a stream of tokens lexed out of
 /// the input character iterator.
@@ -48,7 +63,7 @@ enum LexerStep {
     EndOfInput,
 }
 
-impl <It: Iterator<IoResult<char>>> Lexer<It> {
+impl<It: Iterator<Item = IoResult<char>>> Lexer<It> {
     pub fn new(input: It) -> Lexer<It> {
         Lexer {
             input: input,
@@ -105,7 +120,7 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
         }
     }
 
-    fn getc_while(&mut self, f: |char| -> bool) -> String {
+    fn getc_while<T: Fn(char) -> bool>(&mut self, f: T) -> String {
         let mut s = String::with_capacity(5);
 
         loop {
@@ -165,11 +180,10 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
                 'x' => {
                     let u = self.getc_or_die();
                     let v = self.getc_or_die();
-                    let string = String::from_chars(&[u, v]);
-                    let res: Option<u8> = FromStrRadix::from_str_radix(&*string, 16);
+                    let res = byte_from_hex_pair(u, v);
                     match res {
-                        Some(x) => x as char,
-                        None => self.die("invalid \\xNN escape sequence")
+                        Ok(x) => x as char,
+                        Err(_) => self.die("invalid \\xNN escape sequence")
                     }
                 },
                 c => c,
@@ -349,7 +363,9 @@ impl <It: Iterator<IoResult<char>>> Lexer<It> {
     }
 }
 
-impl <It: Iterator<IoResult<char>>> Iterator<Token> for Lexer<It> {
+impl<It: Iterator<Item = IoResult<char>>> Iterator for Lexer<It> {
+    type Item = Token;
+
     fn next(&mut self) -> Option<Token> {
         loop {
             match self.try_token() {

@@ -6,7 +6,7 @@
 
 //! Big list of tokens. In its own module because it's a really big list.
 
-#[deriving(Show,PartialEq)]
+#[derive(Show,PartialEq)]
 pub enum Token {
     EOF,
 

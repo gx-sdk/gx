@@ -22,7 +22,7 @@ pub struct Parser<It> {
     ungot: Vec<Token>,
 }
 
-impl <It: Iterator<Token>> Parser<It> {
+impl<It: Iterator<Item = Token>> Parser<It> {
     pub fn new(input: It) -> Parser<It> {
         Parser {
             input: input,

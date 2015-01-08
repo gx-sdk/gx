@@ -4,7 +4,6 @@
 // For licensing information, refer to the COPYING file
 // in the project root
 
-#![feature(globs)]
 #![experimental = "awaiting end-to-end implementation"]
 
 //! This crate and all its modules are the components of the reference
