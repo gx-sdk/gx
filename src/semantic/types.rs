@@ -7,6 +7,8 @@
 //! Semantic understanding of `gx` types. The structures here are carefully
 //! designed to reflect only the semantic extent of the type system.
 
+use std::fmt;
+
 /// The primary type descriptor. An equivalence relation is defined for this
 /// enum that considers only the relevant structural aspects of a type. For
 /// example, two `Type::Struct`s are considered equal if they have the same
@@ -113,35 +115,39 @@ impl<'a> PartialEq for Type<'a> {
     }
 }
 
-impl<'a> ToString for Type<'a> {
-    fn to_string(&self) -> String {
+impl<'a> fmt::Show for Type<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         use self::Type::*;
 
         match *self {
-            U8  => String::from_str("u8"),
-            U16 => String::from_str("u16"),
-            U32 => String::from_str("u32"),
-            S8  => String::from_str("s8"),
-            S16 => String::from_str("s16"),
-            S32 => String::from_str("s32"),
+            U8  => f.write_str("u8"),
+            U16 => f.write_str("u16"),
+            U32 => f.write_str("u32"),
+            S8  => f.write_str("s8"),
+            S16 => f.write_str("s16"),
+            S32 => f.write_str("s32"),
 
-            BCD(x) => format!("bcd<{}>", x),
-            Fixed(x,y) => format!("fixed<{},{}>", x, y),
-            Bitvec(n, _) => format!("bitvec<{}>(...)", n),
+            BCD(x) => f.write_fmt(format_args!("bcd<{}>", x)),
+            Fixed(x,y) => f.write_fmt(format_args!("fixed<{},{}>", x, y)),
+            Bitvec(n, _) => f.write_fmt(format_args!("bitvec<{}>(...)", n)),
 
-            Pointer(ref to) => format!("*{}", to.to_string()),
-            Array(n, ref to) => format!("[{}]{}", n, to.to_string()),
+            Pointer(ref to) =>
+                f.write_fmt(format_args!("*{:?}", to)),
+            Array(n, ref to) =>
+                f.write_fmt(format_args!("[{}]{:?}", n, to)),
             Struct(ref v) => {
-                let mut body = String::new();
+                let mut comma = false;
+                try!(f.write_str("struct{"));
                 for x in v.iter() {
-                    let s = if body.is_empty() {
-                        x.typ.to_string()
+                    if !comma {
+                        try!(x.typ.fmt(f));
+                        comma = true;
                     } else {
-                        format!(",{}", x.typ.to_string())
+                        try!(f.write_str(","));
+                        try!(x.typ.fmt(f));
                     };
-                    body.push_str(s.as_slice());
                 }
-                format!("struct{{{}}}", body)
+                f.write_str(";")
             }
         }
     }
