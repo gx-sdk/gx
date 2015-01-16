@@ -22,7 +22,7 @@ use semantic::program::*;
 /// The main symbol type.
 pub struct Symbol<'a> {
     pub name:          String,
-    pub line:          Option<uint>,
+    pub line:          Option<usize>,
     pub typ:           SymbolType<'a>,
 }
 

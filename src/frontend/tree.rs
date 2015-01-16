@@ -10,7 +10,7 @@
 use expr::Expr;
 
 pub type Id = String;
-pub type Number = int;
+pub type Number = isize;
 
 pub type Input = Vec<Unit>;
 
@@ -47,7 +47,7 @@ pub enum TypeSpec {
     Bitvec         (Option<Number>, Vec<BitvecMember>),
 }
 pub enum BitvecMember {
-    Literal        (uint, Number),
+    Literal        (usize, Number),
     Variable       (Id, Number),
 }
 
@@ -179,7 +179,7 @@ pub enum Primary {
 
 pub struct DumpContext {
     pub blank: bool,
-    pub depth: int,
+    pub depth: isize,
 }
 impl Copy for DumpContext {
 }
@@ -620,7 +620,7 @@ impl<P: Dumpable> Dumpable for Expr<P> {
                 d.push_str("Expr::Assign");
                 to.dump(d);
                 fr.dump(d);
-                d.put_ln(format!("{}", op));
+                d.put_ln(format!("{:?}", op));
                 d.pop();
             },
 
@@ -634,7 +634,7 @@ impl<P: Dumpable> Dumpable for Expr<P> {
 
             Expr::Binary(ref op, box ref e1, box ref e2) => {
                 d.push_str("Expr::Binary");
-                d.put_ln(format!("{}", op));
+                d.put_ln(format!("{:?}", op));
                 e1.dump(d);
                 e2.dump(d);
                 d.pop();
@@ -642,7 +642,7 @@ impl<P: Dumpable> Dumpable for Expr<P> {
 
             Expr::Unary(ref op, box ref ex) => {
                 d.push_str("Expr::Unary");
-                d.put_ln(format!("{}", op));
+                d.put_ln(format!("{:?}", op));
                 ex.dump(d);
                 d.pop();
             },

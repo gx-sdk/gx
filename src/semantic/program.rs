@@ -30,21 +30,21 @@ pub struct Unit<'a> {
 /// of a type system.
 pub struct TypeAlias<'a> {
     pub name:          String,
-    pub line:          uint,
+    pub line:          usize,
     pub typ:           &'a Type<'a>,
 }
 
 /// Global variable storage
 pub struct Storage<'a> {
     pub name:          String,
-    pub line:          uint,
+    pub line:          usize,
     pub typ:           &'a Type<'a>,
 }
 
 /// A function
 pub struct Function<'a> {
     pub name:          String,
-    pub line:          uint,
+    pub line:          usize,
     pub ret:           Option<&'a Type<'a>>,
     pub args:          Vec<FunctionArg<'a>>,
     // TODO

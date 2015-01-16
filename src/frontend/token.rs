@@ -12,7 +12,7 @@ pub enum Token {
 
     // parameterized token types
 
-    Number(uint),
+    Number(usize),
     Identifier(String),
     String(String),
     Character(char),

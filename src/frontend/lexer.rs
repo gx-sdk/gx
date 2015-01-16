@@ -53,7 +53,7 @@ fn byte_from_hex_pair(hi: char, lo: char) -> Result<u8, ()> {
 pub struct Lexer<It> {
     input: It,
     ungot: Vec<char>,
-    line_number: uint,
+    line_number: usize,
     sent_eof: bool,
 }
 
@@ -147,11 +147,11 @@ impl<It: Iterator<Item = IoResult<char>>> Lexer<It> {
 
         let (base, num) =
             if s.starts_with("0x") || s.starts_with("0X") {
-                (16u, s.slice_from(2))
+                (16us, s.slice_from(2))
             } else if s.starts_with("0") {
-                (8u,  s.as_slice())
+                (8us,  s.as_slice())
             } else {
-                (10u, s.as_slice())
+                (10us, s.as_slice())
             };
 
         match FromStrRadix::from_str_radix(num, base) {

@@ -26,19 +26,19 @@ pub enum Type<'a> {
     S32,
 
     /// Binary coded decimal. The single argument is the number of digits.
-    BCD            (uint),
+    BCD            (usize),
     /// Fixed point arithmetic value. The attributes represent the number of
     /// bits before and after the decimal point, respectively.
-    Fixed          (uint, uint),
+    Fixed          (usize, usize),
     /// Bit vector (bitvec) type. The first argument is the number of bits
     /// in the full vector, and the second argument is a vector of members.
-    Bitvec         (uint, Vec<BitvecMember>),
+    Bitvec         (usize, Vec<BitvecMember>),
 
     /// A pointer to a value of the given type.
     Pointer        (&'a Type<'a>),
     /// An array of values of the given type. The first argument represents
     /// the number of elements in the array, as declared.
-    Array          (uint, &'a Type<'a>),
+    Array          (usize, &'a Type<'a>),
     /// A struct.
     Struct         (Vec<StructMember<'a>>),
 }
@@ -51,8 +51,8 @@ pub struct StructMember<'a> {
 
 /// A member of a bitvec.
 pub enum BitvecMember {
-    Literal        (uint, uint),
-    Variable       (uint, String),
+    Literal        (usize, usize),
+    Variable       (usize, String),
 }
 
 impl<'a> PartialEq for Type<'a> {
@@ -148,7 +148,7 @@ impl<'a> ToString for Type<'a> {
 }
 
 impl BitvecMember {
-    fn size(&self) -> uint {
+    fn size(&self) -> usize {
         match *self {
             BitvecMember::Literal(x, _)   => x,
             BitvecMember::Variable(x, _)  => x,

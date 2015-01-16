@@ -48,7 +48,7 @@ impl<It: Iterator<Item = Token>> Parser<It> {
         let t_ = self.gettok();
 
         if t != t_ {
-            panic!("expected {}, got {}", t, t_)
+            panic!("expected {:?}, got {:?}", t, t_)
         }
     }
 
@@ -67,16 +67,16 @@ impl<It: Iterator<Item = Token>> Parser<It> {
 
     pub fn constant(&mut self) -> Expr<Primary> {
         Expr::Primary(match self.gettok() {
-            Token::Number(x) =>     Primary::Number(x as int),
-            Token::Character(x) =>  Primary::Number(x as int),
+            Token::Number(x) =>     Primary::Number(x as isize),
+            Token::Character(x) =>  Primary::Number(x as isize),
             _ => panic!("expected constant"),
         })
     }
 
     pub fn number(&mut self) -> Number {
         match self.gettok() {
-            Token::Number(x) =>     x as int,
-            Token::Character(x) =>  x as int,
+            Token::Number(x) =>     x as isize,
+            Token::Character(x) =>  x as isize,
             _ => panic!("expected number"),
         }
     }
@@ -452,7 +452,7 @@ impl<It: Iterator<Item = Token>> Parser<It> {
                 self.expect(Token::Semicolon);
                 x
             },
-            x => panic!("expected = or ; got {}", x)
+            x => panic!("expected = or ; got {:?}", x)
         };
 
         VarDecl {
@@ -1224,9 +1224,9 @@ impl<It: Iterator<Item = Token>> Parser<It> {
             Token::Identifier(x) =>
                 Expr::Primary(Primary::Id(x)),
             Token::Number(x) =>
-                Expr::Primary(Primary::Number(x as int)),
+                Expr::Primary(Primary::Number(x as isize)),
             Token::Character(x) =>
-                Expr::Primary(Primary::Number(x as int)),
+                Expr::Primary(Primary::Number(x as isize)),
             Token::LParen => {
                 let ex = self.expr();
                 self.expect(Token::RParen);
