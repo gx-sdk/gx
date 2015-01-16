@@ -162,3 +162,59 @@ impl BitvecMember {
         }
     }
 }
+
+// UNIT TESTS
+// =============================================================================
+
+#[test]
+fn test_simple_type_formatters() {
+    assert_eq!("u8",  format!("{:?}", Type::U8));
+    assert_eq!("u16", format!("{:?}", Type::U16));
+    assert_eq!("u32", format!("{:?}", Type::U32));
+    assert_eq!("s8",  format!("{:?}", Type::S8));
+    assert_eq!("s16", format!("{:?}", Type::S16));
+    assert_eq!("s32", format!("{:?}", Type::S32));
+
+    assert_eq!("bcd<8>", format!("{:?}", Type::BCD(8)));
+    assert_eq!("fixed<8,24>", format!("{:?}", Type::Fixed(8, 24)));
+    // leave out Bitvec for now (TODO)
+}
+
+#[test]
+fn test_fancy_type_formatters() {
+    assert_eq!("*bcd<2>", format!("{:?}",
+        Type::Pointer(&Type::BCD(2))
+    ));
+    assert_eq!("[5]**fixed<16,16>", format!("{:?}",
+        Type::Array(5, &Type::Pointer(&Type::Pointer(&Type::Fixed(16, 16))))
+    ));
+    // leave out Struct for now (TODO)
+}
+
+#[test]
+fn test_simple_equivalence() {
+    assert_eq!(Type::U8,  Type::U8);
+    assert_eq!(Type::U16, Type::U16);
+    assert_eq!(Type::U32, Type::U32);
+    assert_eq!(Type::S8,  Type::S8);
+    assert_eq!(Type::S16, Type::S16);
+    assert_eq!(Type::S32, Type::S32);
+
+    assert_eq!(Type::BCD(3), Type::BCD(3));
+
+    assert_eq!(Type::Fixed(2, 4), Type::Fixed(2, 4));
+}
+
+#[test]
+fn test_simple_inequivalence() {
+    // don't want to be exhaustive here. deal with it.
+
+    assert!(Type::U8 != Type::U16);
+    assert!(Type::U32 != Type::S8);
+
+    assert!(Type::BCD(3) != Type::BCD(6));
+
+    assert!(Type::Fixed(2, 2) != Type::Fixed(2, 5));
+    assert!(Type::Fixed(2, 2) != Type::Fixed(3, 2));
+    assert!(Type::Fixed(1, 2) != Type::Fixed(2, 1));
+}
