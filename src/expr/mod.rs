@@ -143,10 +143,10 @@ impl<P: StaticOperand> Expr<P> {
     /// Returns true if the expression can be folded
     pub fn can_fold(&self) -> bool {
         match *self {
-            Expr::Binary(_, box ref e1, box ref e2) =>
+            Expr::Binary(_, ref e1, ref e2) =>
                 e1.can_fold() && e2.can_fold(),
 
-            Expr::Unary(_, box ref e) =>
+            Expr::Unary(_, ref e) =>
                 e.can_fold(),
 
             Expr::Primary(ref p) =>
@@ -159,22 +159,22 @@ impl<P: StaticOperand> Expr<P> {
     /// Folds the current expression, consuming it
     pub fn fold(self) -> Expr<P> {
         match self {
-            Expr::Unary(op, box ex) =>
+            Expr::Unary(op, ex) =>
                 match ex.fold() {
                     Expr::Primary(p) =>
                         Expr::Primary(p.apply_un_op(op)),
 
                     x =>
-                        Expr::Unary(op, box x)
+                        Expr::Unary(op, Box::new(x))
                 },
 
-            Expr::Binary(op, box ex1, box ex2) =>
+            Expr::Binary(op, ex1, ex2) =>
                 match (ex1.fold(), ex2.fold()) {
                     (Expr::Primary(p1), Expr::Primary(p2)) =>
                         Expr::Primary(p1.apply_bin_op(p2, op)),
 
                     (a, b) =>
-                        Expr::Binary(op, box a, box b),
+                        Expr::Binary(op, Box::new(a), Box::new(b)),
                 },
 
             x => x

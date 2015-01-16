@@ -318,12 +318,12 @@ impl Dumpable for TypeSpec {
                 }
                 d.pop();
             },
-            TypeSpec::Pointer(box ref x) => {
+            TypeSpec::Pointer(ref x) => {
                 d.push_str("TypeSpec::Pointer");
                 x.dump(d);
                 d.pop();
             },
-            TypeSpec::Array(n, box ref t) => {
+            TypeSpec::Array(n, ref t) => {
                 d.push_str("TypeSpec::Array");
                 d.put_ln(format!("size: {}", n));
                 t.dump(d);
@@ -542,8 +542,8 @@ impl Dumpable for IfStmt {
         self.cond.dump(d);
         self.tb.dump(d);
         match self.fb {
-            Some(box ref st)  => st.dump(d),
-            None              => { },
+            Some(ref st)  => st.dump(d),
+            None          => { },
         }
         d.pop();
     }
@@ -616,7 +616,7 @@ impl<P: Dumpable> Dumpable for Expr<P> {
                 d.pop();
             },
 
-            Expr::Assign(ref op, box ref to, box ref fr) => {
+            Expr::Assign(ref op, ref to, ref fr) => {
                 d.push_str("Expr::Assign");
                 to.dump(d);
                 fr.dump(d);
@@ -624,7 +624,7 @@ impl<P: Dumpable> Dumpable for Expr<P> {
                 d.pop();
             },
 
-            Expr::Ternary(box ref cond, box ref tb, box ref fb) => {
+            Expr::Ternary(ref cond, ref tb, ref fb) => {
                 d.push_str("Expr::Ternary");
                 cond.dump(d);
                 tb.dump(d);
@@ -632,7 +632,7 @@ impl<P: Dumpable> Dumpable for Expr<P> {
                 d.pop();
             },
 
-            Expr::Binary(ref op, box ref e1, box ref e2) => {
+            Expr::Binary(ref op, ref e1, ref e2) => {
                 d.push_str("Expr::Binary");
                 d.put_ln(format!("{:?}", op));
                 e1.dump(d);
@@ -640,14 +640,14 @@ impl<P: Dumpable> Dumpable for Expr<P> {
                 d.pop();
             },
 
-            Expr::Unary(ref op, box ref ex) => {
+            Expr::Unary(ref op, ref ex) => {
                 d.push_str("Expr::Unary");
                 d.put_ln(format!("{:?}", op));
                 ex.dump(d);
                 d.pop();
             },
 
-            Expr::Call(box ref f, ref v) => {
+            Expr::Call(ref f, ref v) => {
                 d.push_str("Expr::Call");
                 f.dump(d);
                 for ex in v.iter() {
@@ -656,7 +656,7 @@ impl<P: Dumpable> Dumpable for Expr<P> {
                 d.pop();
             },
 
-            Expr::Member(box ref ex, ref id) => {
+            Expr::Member(ref ex, ref id) => {
                 d.push_str("Expr::Member");
                 ex.dump(d);
                 d.put_ln(format!("member: {}", id));
@@ -672,7 +672,7 @@ impl<P: Dumpable> Dumpable for Expr<P> {
 impl Dumpable for Primary {
     fn dump (&self, d: &mut DumpContext) {
         match *self {
-            Primary::Scoped(box ref p, ref id) => {
+            Primary::Scoped(ref p, ref id) => {
                 d.push_str("Expr::Scoped");
                 p.dump(d);
                 d.put_ln(format!("field: {}", id));

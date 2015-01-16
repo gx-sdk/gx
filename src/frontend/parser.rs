@@ -261,13 +261,13 @@ impl<It: Iterator<Item = Token>> Parser<It> {
             },
 
             Token::Star => {
-                TypeSpec::Pointer(box self.type_spec())
+                TypeSpec::Pointer(Box::new(self.type_spec()))
             },
 
             Token::LBrack => {
                 let x = self.number();
                 self.expect(Token::RBrack);
-                TypeSpec::Array(x, box self.type_spec())
+                TypeSpec::Array(x, Box::new(self.type_spec()))
             },
 
             Token::Struct => {
@@ -706,9 +706,9 @@ impl<It: Iterator<Item = Token>> Parser<It> {
         self.expect(Token::LParen);
         let cond = self.expr();
         self.expect(Token::RParen);
-        let tb = box self.stmt();
+        let tb = Box::new(self.stmt());
         let fb = match self.gettok() {
-            Token::Else => Some(box self.stmt()),
+            Token::Else => Some(Box::new(self.stmt())),
             x => { self.untok(x); None },
         };
 
@@ -786,7 +786,7 @@ impl<It: Iterator<Item = Token>> Parser<It> {
         self.expect(Token::Loop);
 
         Stmt::Loop(LoopStmt {
-            body:      box self.stmt()
+            body:      Box::new(self.stmt())
         })
     }
 
@@ -801,7 +801,7 @@ impl<It: Iterator<Item = Token>> Parser<It> {
 
         Stmt::While(WhileStmt {
             cond:      cond,
-            body:      box self.stmt(),
+            body:      Box::new(self.stmt()),
         })
     }
 
@@ -819,7 +819,7 @@ impl<It: Iterator<Item = Token>> Parser<It> {
         Stmt::For(ForStmt {
             id:        id,
             iter:      iter,
-            body:      box self.stmt(),
+            body:      Box::new(self.stmt()),
         })
     }
 
@@ -914,8 +914,8 @@ impl<It: Iterator<Item = Token>> Parser<It> {
 
         Expr::Assign(
             op,
-            box left,
-            box self.ex_assign(),
+            Box::new(left),
+            Box::new(self.ex_assign()),
         )
     }
 
@@ -936,9 +936,9 @@ impl<It: Iterator<Item = Token>> Parser<It> {
         self.expect(Token::Colon);
 
         Expr::Ternary(
-            box left,
-            box mid,
-            box self.ex_tern()
+            Box::new(left),
+            Box::new(mid),
+            Box::new(self.ex_tern())
         )
     }
 
@@ -952,7 +952,11 @@ impl<It: Iterator<Item = Token>> Parser<It> {
         loop {
             match self.gettok() {
                 Token::DblPipe =>
-                    left = Expr::Binary(BinOp::BoolOr, box left, box self.ex_land()),
+                    left = Expr::Binary(
+                        BinOp::BoolOr,
+                        Box::new(left),
+                        Box::new(self.ex_land())
+                    ),
                 tok =>
                     { self.untok(tok); return left }
             }
@@ -969,7 +973,11 @@ impl<It: Iterator<Item = Token>> Parser<It> {
         loop {
             match self.gettok() {
                 Token::DblAmp =>
-                    left = Expr::Binary(BinOp::BoolAnd, box left, box self.ex_bor()),
+                    left = Expr::Binary(
+                        BinOp::BoolAnd,
+                        Box::new(left),
+                        Box::new(self.ex_bor())
+                    ),
                 tok =>
                     { self.untok(tok); return left }
             }
@@ -986,7 +994,11 @@ impl<It: Iterator<Item = Token>> Parser<It> {
         loop {
             match self.gettok() {
                 Token::Pipe =>
-                    left = Expr::Binary(BinOp::BitOr, box left, box self.ex_bxor()),
+                    left = Expr::Binary(
+                        BinOp::BitOr,
+                        Box::new(left),
+                        Box::new(self.ex_bxor())
+                    ),
                 tok =>
                     { self.untok(tok); return left }
             }
@@ -1003,7 +1015,11 @@ impl<It: Iterator<Item = Token>> Parser<It> {
         loop {
             match self.gettok() {
                 Token::Caret =>
-                    left = Expr::Binary(BinOp::BitXor, box left, box self.ex_band()),
+                    left = Expr::Binary(
+                        BinOp::BitXor,
+                        Box::new(left),
+                        Box::new(self.ex_band())
+                    ),
                 tok =>
                     { self.untok(tok); return left }
             }
@@ -1020,7 +1036,11 @@ impl<It: Iterator<Item = Token>> Parser<It> {
         loop {
             match self.gettok() {
                 Token::Amp =>
-                    left = Expr::Binary(BinOp::BitAnd, box left, box self.ex_eq()),
+                    left = Expr::Binary(
+                        BinOp::BitAnd,
+                        Box::new(left),
+                        Box::new(self.ex_eq())
+                    ),
                 tok =>
                     { self.untok(tok); return left }
             }
@@ -1038,9 +1058,17 @@ impl<It: Iterator<Item = Token>> Parser<It> {
         loop {
             match self.gettok() {
                 Token::Eq =>
-                    left = Expr::Binary(BinOp::Eq, box left, box self.ex_cmp()),
+                    left = Expr::Binary(
+                        BinOp::Eq,
+                        Box::new(left),
+                        Box::new(self.ex_cmp())
+                    ),
                 Token::NotEq =>
-                    left = Expr::Binary(BinOp::NotEq, box left, box self.ex_cmp()),
+                    left = Expr::Binary(
+                        BinOp::NotEq,
+                        Box::new(left),
+                        Box::new(self.ex_cmp())
+                    ),
 
                 tok =>
                     { self.untok(tok); return left }
@@ -1061,13 +1089,29 @@ impl<It: Iterator<Item = Token>> Parser<It> {
         loop {
             match self.gettok() {
                 Token::Less =>
-                    left = Expr::Binary(BinOp::Less, box left, box self.ex_shift()),
+                    left = Expr::Binary(
+                        BinOp::Less,
+                        Box::new(left),
+                        Box::new(self.ex_shift())
+                    ),
                 Token::Greater =>
-                    left = Expr::Binary(BinOp::Greater, box left, box self.ex_shift()),
+                    left = Expr::Binary(
+                        BinOp::Greater,
+                        Box::new(left),
+                        Box::new(self.ex_shift())
+                    ),
                 Token::LessEq =>
-                    left = Expr::Binary(BinOp::LessEq, box left, box self.ex_shift()),
+                    left = Expr::Binary(
+                        BinOp::LessEq,
+                        Box::new(left),
+                        Box::new(self.ex_shift())
+                    ),
                 Token::GreaterEq =>
-                    left = Expr::Binary(BinOp::GreaterEq, box left, box self.ex_shift()),
+                    left = Expr::Binary(
+                        BinOp::GreaterEq,
+                        Box::new(left),
+                        Box::new(self.ex_shift())
+                    ),
 
                 tok =>
                     { self.untok(tok); return left }
@@ -1086,9 +1130,17 @@ impl<It: Iterator<Item = Token>> Parser<It> {
         loop {
             match self.gettok() {
                 Token::LShift =>
-                    left = Expr::Binary(BinOp::LShift, box left, box self.ex_add()),
+                    left = Expr::Binary(
+                        BinOp::LShift,
+                        Box::new(left),
+                        Box::new(self.ex_add())
+                    ),
                 Token::RShift =>
-                    left = Expr::Binary(BinOp::RShift, box left, box self.ex_add()),
+                    left = Expr::Binary(
+                        BinOp::RShift,
+                        Box::new(left),
+                        Box::new(self.ex_add())
+                    ),
 
                 tok =>
                     { self.untok(tok); return left }
@@ -1107,9 +1159,17 @@ impl<It: Iterator<Item = Token>> Parser<It> {
         loop {
             match self.gettok() {
                 Token::Plus =>
-                    left = Expr::Binary(BinOp::Add, box left, box self.ex_mul()),
+                    left = Expr::Binary(
+                        BinOp::Add,
+                        Box::new(left),
+                        Box::new(self.ex_mul())
+                    ),
                 Token::Minus =>
-                    left = Expr::Binary(BinOp::Sub, box left, box self.ex_mul()),
+                    left = Expr::Binary(
+                        BinOp::Sub,
+                        Box::new(left),
+                        Box::new(self.ex_mul())
+                    ),
 
                 tok =>
                     { self.untok(tok); return left }
@@ -1129,11 +1189,23 @@ impl<It: Iterator<Item = Token>> Parser<It> {
         loop {
             match self.gettok() {
                 Token::Star =>
-                    left = Expr::Binary(BinOp::Mul, box left, box self.ex_unary()),
+                    left = Expr::Binary(
+                        BinOp::Mul,
+                        Box::new(left),
+                        Box::new(self.ex_unary())
+                    ),
                 Token::Slash =>
-                    left = Expr::Binary(BinOp::Div, box left, box self.ex_unary()),
+                    left = Expr::Binary(
+                        BinOp::Div,
+                        Box::new(left),
+                        Box::new(self.ex_unary())
+                    ),
                 Token::Mod =>
-                    left = Expr::Binary(BinOp::Mod, box left, box self.ex_unary()),
+                    left = Expr::Binary(
+                        BinOp::Mod,
+                        Box::new(left),
+                        Box::new(self.ex_unary())
+                    ),
 
                 tok =>
                     { self.untok(tok); return left }
@@ -1154,19 +1226,19 @@ impl<It: Iterator<Item = Token>> Parser<It> {
     pub fn ex_unary(&mut self) -> Expr<Primary> {
         match self.gettok() {
             Token::Incr =>
-                Expr::Unary(UnOp::PreIncr, box self.ex_unary()),
+                Expr::Unary(UnOp::PreIncr, Box::new(self.ex_unary())),
             Token::Decr =>
-                Expr::Unary(UnOp::PreDecr, box self.ex_unary()),
+                Expr::Unary(UnOp::PreDecr, Box::new(self.ex_unary())),
             Token::Excl =>
-                Expr::Unary(UnOp::BoolNot, box self.ex_unary()),
+                Expr::Unary(UnOp::BoolNot, Box::new(self.ex_unary())),
             Token::Tilde =>
-                Expr::Unary(UnOp::BitNot, box self.ex_unary()),
+                Expr::Unary(UnOp::BitNot, Box::new(self.ex_unary())),
             Token::Star =>
-                Expr::Unary(UnOp::Deref, box self.ex_unary()),
+                Expr::Unary(UnOp::Deref, Box::new(self.ex_unary())),
             Token::Amp =>
-                Expr::Unary(UnOp::AddrOf, box self.ex_unary()),
+                Expr::Unary(UnOp::AddrOf, Box::new(self.ex_unary())),
             Token::Sizeof =>
-                Expr::Unary(UnOp::SizeOf, box self.ex_unary()),
+                Expr::Unary(UnOp::SizeOf, Box::new(self.ex_unary())),
 
             tok =>
                 { self.untok(tok); self.ex_bottom() }
@@ -1187,23 +1259,30 @@ impl<It: Iterator<Item = Token>> Parser<It> {
         loop {
             match self.gettok() {
                 Token::Incr =>
-                    return Expr::Unary(UnOp::PostIncr, box left),
+                    return Expr::Unary(UnOp::PostIncr, Box::new(left)),
                 Token::Decr =>
-                    return Expr::Unary(UnOp::PostDecr, box left),
+                    return Expr::Unary(UnOp::PostDecr, Box::new(left)),
                 Token::LParen => {
-                    left = Expr::Call(box left, self.ex_list());
+                    left = Expr::Call(Box::new(left), self.ex_list());
                     self.expect(Token::RParen);
                 },
                 Token::LBrack => {
-                    left = Expr::Binary(BinOp::Element, box left, box self.expr());
+                    left = Expr::Binary(
+                        BinOp::Element,
+                        Box::new(left),
+                        Box::new(self.expr())
+                    );
                     self.expect(Token::RBrack);
                 },
                 Token::Dot =>
-                    left = Expr::Member(box left, self.id()),
+                    left = Expr::Member(Box::new(left), self.id()),
                 Token::DblColon =>
                     left = match left {
                         Expr::Primary(p) =>
-                            Expr::Primary(Primary::Scoped(box p, self.id())),
+                            Expr::Primary(Primary::Scoped(
+                                Box::new(p),
+                                self.id()
+                            )),
                         _ =>
                             panic!("can only use :: on primaries"),
                     },
