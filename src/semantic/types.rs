@@ -115,8 +115,7 @@ impl<'a> PartialEq for Type<'a> {
     }
 }
 
-#[allow(unstable)]
-impl<'a> fmt::Show for Type<'a> {
+impl<'a> fmt::Debug for Type<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         use self::Type::*;
 

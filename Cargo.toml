@@ -5,3 +5,6 @@ authors = [ "Alex Iadicicco <alex@ajitek.net>" ]
 
 [[bin]]
 name = "gx"
+
+[dependencies]
+getopts = "*"

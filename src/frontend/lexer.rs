@@ -147,11 +147,11 @@ impl<It: Iterator<Item = IoResult<char>>> Lexer<It> {
 
         let (base, num) =
             if s.starts_with("0x") || s.starts_with("0X") {
-                (16u32, s.slice_from(2))
+                (16u32, &s[2..])
             } else if s.starts_with("0") {
-                (8u32,  s.as_slice())
+                (8u32,  &s[..])
             } else {
-                (10u32, s.as_slice())
+                (10u32, &s[..])
             };
 
         match FromStrRadix::from_str_radix(num, base) {

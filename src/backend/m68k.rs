@@ -39,7 +39,7 @@ pub enum CC {
     T,
 }
 
-impl fmt::Show for EA {
+impl fmt::Debug for EA {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         use self::EA::*;
 

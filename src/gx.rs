@@ -6,6 +6,13 @@
 
 #![unstable = "awaiting end-to-end implementation"]
 
+// These were added to shut rustc up. They need to be removed eventually and
+// dealt with accordingly.
+#![feature(collections)]
+#![feature(core)]
+#![feature(old_io)]
+#![feature(unicode)]
+
 //! This crate and all its modules are the components of the reference
 //! implementation of the `gx` language. A small driver program is provided
 //! as well that is invoked by the `gx` executable.
@@ -25,7 +32,6 @@ mod driver {
     use frontend::tree::*;
     use frontend::lexer;
     use frontend::parser;
-    use semantic::types;
 
     fn parse(ch: Chars<BufferedReader<StdReader>>) -> Input {
         parser::Parser::new(lexer::Lexer::new(ch)).file()
