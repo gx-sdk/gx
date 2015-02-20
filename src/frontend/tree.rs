@@ -12,23 +12,25 @@ use expr::Expr;
 pub type Id = String;
 pub type Number = isize;
 
-pub type Input = Vec<Unit>;
-
-pub struct Unit {
-    pub name:      Id,
-    pub decls:     Vec<Decl>
-}
+pub type Input = Vec<Decl>;
 
 pub struct Decl {
     pub is_pub:    bool,
     pub body:      DeclBody,
 }
 pub enum DeclBody {
+    Unit           (UnitDecl),
     Type           (TypeDecl),
     Func           (FuncDecl),
     GlobalVar      (GlobalVarDecl),
     Const          (ConstDecl),
     Region         (RegionDecl),
+}
+
+/// Declaration of a namespace, a "unit".
+pub struct UnitDecl {
+    pub name:      Id,
+    pub decls:     Vec<Decl>
 }
 
 /// Declaration of a type alias
@@ -247,17 +249,6 @@ impl DumpContext {
     }
 }
 
-impl Dumpable for Unit {
-    fn dump(&self, d: &mut DumpContext) {
-        d.push_str("Unit");
-        d.put_ln(format!("name: {}", self.name));
-        for decl in self.decls.iter() {
-            decl.dump(d);
-        }
-        d.pop();
-    }
-}
-
 impl Dumpable for Decl {
     fn dump(&self, d: &mut DumpContext) {
         d.push_str("Decl");
@@ -270,6 +261,10 @@ impl Dumpable for Decl {
 impl Dumpable for DeclBody {
     fn dump(&self, d: &mut DumpContext) {
         match *self {
+            DeclBody::Unit(ref x) => {
+                d.push_str("DeclBody::Unit");
+                x.dump(d);
+            },
             DeclBody::Type(ref x) => {
                 d.push_str("DeclBody::Type");
                 x.dump(d);
@@ -291,6 +286,17 @@ impl Dumpable for DeclBody {
                 x.dump(d);
             },
         };
+        d.pop();
+    }
+}
+
+impl Dumpable for UnitDecl {
+    fn dump(&self, d: &mut DumpContext) {
+        d.push_str("UnitDecl");
+        d.put_ln(format!("name: {}", self.name));
+        for decl in self.decls.iter() {
+            decl.dump(d);
+        }
         d.pop();
     }
 }

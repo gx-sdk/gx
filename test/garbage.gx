@@ -1,5 +1,3 @@
-unit Bla {
-	pub type bla: u8;
-}
+pub type bla: u8;
 
 bla

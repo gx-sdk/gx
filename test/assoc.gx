@@ -1,13 +1,11 @@
-unit ExpressionsTest {
-	fn test_associativity() {
-		30 / 2 * 3;
-		10 - 2 + 3;
-		a.b.c;
-		a()();
-	}
+fn test_associativity() {
+	30 / 2 * 3;
+	10 - 2 + 3;
+	a.b.c;
+	a()();
+}
 
-	fn test_precedence() {
-		a = b + c * d;
-		a = c * d + b;
-	}
+fn test_precedence() {
+	a = b + c * d;
+	a = c * d + b;
 }

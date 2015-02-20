@@ -1,0 +1,28 @@
+unit TopLevel {
+	unit SubUnit1 {
+		fn dummy() {
+			return 1;
+		}
+	}
+
+	unit SubUnit2 {
+		fn dummy() {
+			return 2;
+		}
+	}
+
+	fn dummy() {
+		return 3;
+	}
+}
+
+fn dummy() {
+	return 4;
+}
+
+fn main() {
+	TopLevel::SubUnit1::dummy();
+	TopLevel::SubUnit2::dummy();
+	TopLevel::dummy();
+	dummy();
+}

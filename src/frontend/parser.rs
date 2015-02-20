@@ -126,33 +126,17 @@ impl<It: Iterator<Item = Token>> Parser<It> {
     }
 
     /// ```plain
-    /// file' -> unit file'
+    /// file' -> decl file'
     ///        | ə
     /// ```
     pub fn file_p(&mut self) -> Input {
         let mut v = Vec::new();
 
         loop {
-            match *self.peek() {
-                Token::Unit  => v.push(self.unit()),
-                _ => return v,
+            match self.decl_o() {
+                Some(d)  => v.push(d),
+                None => return v,
             }
-        }
-    }
-
-    /// ```plain
-    /// unit -> 'unit' id '{' decl-list '}'
-    /// ```
-    pub fn unit(&mut self) -> Unit {
-        self.expect(Token::Unit);
-        let name = self.id();
-        self.expect(Token::LBrace);
-        let decls = self.decl_list();
-        self.expect(Token::RBrace);
-
-        Unit {
-            name:          name,
-            decls:         decls
         }
     }
 
@@ -174,6 +158,7 @@ impl<It: Iterator<Item = Token>> Parser<It> {
     fn decl_o(&mut self) -> Option<Decl> {
         match *self.peek() {
             Token::Pub     |
+            Token::Unit    |
             Token::Type    |
             Token::Fn      |
             Token::Var     |
@@ -202,7 +187,8 @@ impl<It: Iterator<Item = Token>> Parser<It> {
     }
 
     /// ```plain
-    /// decl-body -> type-decl
+    /// decl-body -> unit-decl
+    ///            | type-decl
     ///            | func-decl
     ///            | global-var-decl
     ///            | const-decl
@@ -210,12 +196,29 @@ impl<It: Iterator<Item = Token>> Parser<It> {
     /// ```
     pub fn decl_body(&mut self) -> DeclBody {
         match *self.peek() {
+            Token::Unit    => DeclBody::Unit      (self.unit_decl()),
             Token::Type    => DeclBody::Type      (self.type_decl()),
             Token::Fn      => DeclBody::Func      (self.func_decl()),
             Token::Var     => DeclBody::GlobalVar (self.global_var_decl()),
             Token::Const   => DeclBody::Const     (self.const_decl()),
             Token::Region  => DeclBody::Region    (self.region_decl()),
             _ => panic!("expected declaration body!")
+        }
+    }
+
+    /// ```plain
+    /// unit-decl -> 'unit' id '{' decl-list '}'
+    /// ```
+    pub fn unit_decl(&mut self) -> UnitDecl {
+        self.expect(Token::Unit);
+        let name = self.id();
+        self.expect(Token::LBrace);
+        let decls = self.decl_list();
+        self.expect(Token::RBrace);
+
+        UnitDecl {
+            name:          name,
+            decls:         decls
         }
     }
 
