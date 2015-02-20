@@ -9,15 +9,16 @@
 use semantic::types::Type;
 use std::collections::HashMap;
 
-/// The top level program structure. At the moment, just a collection
-/// of `Unit`.
-pub struct Program<'a> {
-    pub units:         HashMap<&'a str, Unit<'a>>
-}
+/// The top level program structure. Identical to a Unit at the moment, since
+/// Units have a 1-1 correspondence with namespaces. A Program is simply the top
+/// namespace, so there is no distinction atm. The exception is the 'name'
+/// field, which for now contains some meaningless value.
+type Program<'a> = Unit<'a>;
 
-/// A single unit of the program
+/// A unit within the program
 pub struct Unit<'a> {
     pub name:          String,
+    pub units:         HashMap<&'a str, Unit<'a>>,
     pub types:         HashMap<&'a str, TypeAlias<'a>>,
     pub vars:          HashMap<&'a str, Storage<'a>>,
     pub fns:           HashMap<&'a str, Function<'a>>,
