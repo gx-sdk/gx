@@ -4,7 +4,7 @@
 // For licensing information, refer to the COPYING file
 // in the project root
 
-#![experimental = "awaiting end-to-end implementation"]
+#![unstable = "awaiting end-to-end implementation"]
 
 //! This crate and all its modules are the components of the reference
 //! implementation of the `gx` language. A small driver program is provided
@@ -13,14 +13,15 @@
 pub mod frontend;
 pub mod semantic;
 pub mod expr;
+pub mod backend;
 
 mod driver {
     extern crate getopts;
 
-    use std::io::stdin;
-    use std::io::Chars;
-    use std::io::BufferedReader;
-    use std::io::stdio::StdReader;
+    use std::old_io::stdin;
+    use std::old_io::Chars;
+    use std::old_io::BufferedReader;
+    use std::old_io::stdio::StdReader;
     use frontend::tree::*;
     use frontend::lexer;
     use frontend::parser;
@@ -46,7 +47,8 @@ mod driver {
         */
 
         // read an Input from the stream
-        let f = parse(stdin().lock().chars());
+        let mut s = stdin();
+        let f = parse(s.lock().chars());
         let mut d = DumpContext::new();
         for unit in f.iter() {
             unit.dump(&mut d);

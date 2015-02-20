@@ -6,7 +6,7 @@
 
 //! Lexer for the `gx` language. Very simple lexer.
 
-use std::io::IoResult;
+use std::old_io::IoResult;
 use std::num::FromStrRadix;
 
 use frontend::token::*;
@@ -147,17 +147,17 @@ impl<It: Iterator<Item = IoResult<char>>> Lexer<It> {
 
         let (base, num) =
             if s.starts_with("0x") || s.starts_with("0X") {
-                (16us, s.slice_from(2))
+                (16u32, s.slice_from(2))
             } else if s.starts_with("0") {
-                (8us,  s.as_slice())
+                (8u32,  s.as_slice())
             } else {
-                (10us, s.as_slice())
+                (10u32, s.as_slice())
             };
 
         match FromStrRadix::from_str_radix(num, base) {
-            Some(x) => LexerStep::Step(Token::Number(x)),
-            None => self.die(
-                format!("invalid base {} constant {}", base, s).as_slice()
+            Ok(x) => LexerStep::Step(Token::Number(x)),
+            Err(e) => self.die(
+                format!("invalid base {} constant {}: {}", base, s, e).as_slice()
                 )
         }
     }
