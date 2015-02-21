@@ -157,7 +157,7 @@ impl<It: Iterator<Item = IoResult<char>>> Lexer<It> {
         match FromStrRadix::from_str_radix(num, base) {
             Ok(x) => LexerStep::Step(Token::Number(x)),
             Err(e) => self.die(
-                format!("invalid base {} constant {}: {}", base, s, e).as_slice()
+                &format!("invalid base {} constant {}: {}", base, s, e)
                 )
         }
     }
@@ -165,7 +165,7 @@ impl<It: Iterator<Item = IoResult<char>>> Lexer<It> {
     fn read_identifier(&mut self) -> LexerStep {
         let s = self.getc_while(|c| { is_identifier_char(c) });
 
-        match find_keyword(s.as_slice()) {
+        match find_keyword(&s) {
             Some(tok) => LexerStep::Step(tok),
             None      => LexerStep::Step(Token::Identifier(s)),
         }
@@ -358,7 +358,7 @@ impl<It: Iterator<Item = IoResult<char>>> Lexer<It> {
             '"' => self.read_string(),
             '\'' => self.read_char(),
 
-            _ => self.die(format!("lexer error: unexpected char {}", c).as_slice())
+            _ => self.die(&format!("lexer error: unexpected char {}", c))
         } }
     }
 }
