@@ -204,7 +204,7 @@ impl DumpContext {
         }
 
         self.put(String::from_str("\n"));
-        for _ in range(0, self.depth) {
+        for _ in (0..self.depth) {
             print!("  ");
         }
         self.blank = true;
