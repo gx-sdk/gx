@@ -502,7 +502,7 @@ impl Dumpable for Stmt {
                 d.pop();
             },
             Stmt::Compound(ref v) => {
-                d.push_str("Stmt::Eval");
+                d.push_str("Stmt::Compound");
                 for st in v.iter() {
                     st.dump(d);
                 }
