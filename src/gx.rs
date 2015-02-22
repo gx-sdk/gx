@@ -9,9 +9,10 @@
 // These were added to shut rustc up. They need to be removed eventually and
 // dealt with accordingly.
 #![feature(collections)]
-#![feature(core)]
+#![feature(core)] // required for FromStrRadix in frontend::lexer::read_int()
 #![feature(old_io)]
 #![feature(unicode)]
+#![feature(env)] // required for std::env::args()
 
 //! This crate and all its modules are the components of the reference
 //! implementation of the `gx` language. A small driver program is provided
@@ -29,6 +30,7 @@ mod driver {
     use std::old_io::Chars;
     use std::old_io::BufferedReader;
     use std::old_io::stdio::StdReader;
+    use std::env;
     use frontend::tree::*;
     use frontend::lexer;
     use frontend::parser;
@@ -37,31 +39,39 @@ mod driver {
         parser::Parser::new(lexer::Lexer::new(ch)).file()
     }
 
-    pub fn main() {
-        /*
-        let matches = match getopts::getopts(args.tail(), [
-            getopts::optopt("o", "", "set output file name", "NAME"),
-        ]) {
-            Ok(m)   => m,
-            Err(e)  => panic!(e.to_string()),
-        };
-
-        let output = match matches.opt_str("o") {
-            None    => String::from_str("a.out"),
-            Some(x) => x,
-        };
-        */
-
-        // read an Input from the stream
-        let mut s = stdin();
-        let f = parse(s.lock().chars());
+    fn dump(input: &Input) {
         let mut d = DumpContext::new();
-        for unit in f.iter() {
+        for unit in input {
             unit.dump(&mut d);
         }
         d.end();
     }
 
+    pub fn main() {
+        let mut opts = getopts::Options::new();
+
+        // opts.optopt("o", "", "set output file name", "NAME");
+        opts.optflag("", "dump", "dump parse tree");
+
+        let args: Vec<String> = env::args().collect();
+        let matches = match opts.parse(args.tail()) {
+            Ok(m)   => m,
+            Err(e)  => panic!(e.to_string()),
+        };
+
+        // read an Input from the stream
+        let mut s = stdin();
+        let f = parse(s.lock().chars());
+
+        if matches.opt_present("dump") {
+            dump(&f);
+        }
+
+        // let output = match matches.opt_str("o") {
+        //     None    => String::from_str("a.out"),
+        //     Some(x) => x,
+        // };
+    }
 }
 
 fn main() {
