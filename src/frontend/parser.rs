@@ -176,6 +176,8 @@ impl<It: Iterator<Item = Token>> Parser<It> {
         match *self.peek() {
             Token::Pub     |
             Token::Unit    |
+            Token::Use     |
+            Token::In      |
             Token::Type    |
             Token::Fn      |
             Token::Var     |
@@ -205,6 +207,7 @@ impl<It: Iterator<Item = Token>> Parser<It> {
 
     /// ```plain
     /// decl-body -> unit-decl
+    ///            | use-decl
     ///            | type-decl
     ///            | func-decl
     ///            | global-var-decl
@@ -214,6 +217,8 @@ impl<It: Iterator<Item = Token>> Parser<It> {
     pub fn decl_body(&mut self) -> DeclBody {
         match *self.peek() {
             Token::Unit    => DeclBody::Unit      (self.unit_decl()),
+            Token::Use      |
+            Token::In      => DeclBody::Use       (self.use_decl()),
             Token::Type    => DeclBody::Type      (self.type_decl()),
             Token::Fn      => DeclBody::Func      (self.func_decl()),
             Token::Var     => DeclBody::GlobalVar (self.global_var_decl()),

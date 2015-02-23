@@ -1,4 +1,6 @@
 unit Invaders {
+	use Player;
+
 	pub type AlienFlags: bitvec<16>(0:2, dead:1, flying:1);
 	pub type Alien: struct {
 		flags: AlienFlags;

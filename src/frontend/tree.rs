@@ -22,6 +22,7 @@ pub struct Decl {
 }
 pub enum DeclBody {
     Unit           (UnitDecl),
+    Use            (UseDecl),
     Type           (TypeDecl),
     Func           (FuncDecl),
     GlobalVar      (GlobalVarDecl),
@@ -274,6 +275,10 @@ impl Dumpable for DeclBody {
                 d.push_str("DeclBody::Unit");
                 x.dump(d);
             },
+            DeclBody::Use(ref x) => {
+                d.push_str("DeclBody::Use");
+                x.dump(d);
+            },
             DeclBody::Type(ref x) => {
                 d.push_str("DeclBody::Type");
                 x.dump(d);
@@ -305,6 +310,34 @@ impl Dumpable for UnitDecl {
         d.put_ln(format!("name: {}", self.name));
         for decl in self.decls.iter() {
             decl.dump(d);
+        }
+        d.pop();
+    }
+}
+
+impl Dumpable for UseDecl {
+    fn dump(&self, d: &mut DumpContext) {
+        match *self {
+            UseDecl::Single(ref p) => {
+                d.push_str("UseDecl::Single");
+                p.dump(d);
+            },
+            UseDecl::Many(ref p, ref ids) => {
+                d.push_str("UseDecl::Many");
+                p.dump(d);
+                for id in ids.iter() {
+                    d.put_ln(format!("{}", id));
+                }
+            },
+            UseDecl::Aliased(ref p, ref id) => {
+                d.push_str("UseDecl::Aliased");
+                p.dump(d);
+                d.put_ln(format!("alias: {}", id));
+            },
+            UseDecl::Glob(ref p) => {
+                d.push_str("UseDecl::Glob");
+                p.dump(d);
+            },
         }
         d.pop();
     }
