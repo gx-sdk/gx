@@ -80,6 +80,7 @@ pub enum Token {
 
     // keywords
 
+    As,
     Bitvec,
     Break,
     Case,
@@ -103,12 +104,14 @@ pub enum Token {
     Switch,
     Type,
     Unit,
+    Use,
     Var,
     While,
 }
 
 pub fn find_keyword(id: &str) -> Option<Token> {
     match id {
+        "as"        => Some(Token::As),
         "bitvec"    => Some(Token::Bitvec),
         "break"     => Some(Token::Break),
         "case"      => Some(Token::Case),
@@ -132,6 +135,7 @@ pub fn find_keyword(id: &str) -> Option<Token> {
         "switch"    => Some(Token::Switch),
         "type"      => Some(Token::Type),
         "unit"      => Some(Token::Unit),
+        "use"       => Some(Token::Use),
         "var"       => Some(Token::Var),
         "while"     => Some(Token::While),
         _           => None,
@@ -212,6 +216,7 @@ impl Token {
             Token::LShiftEq =>      TokenAttr("'<<='", "<<="),
             Token::RShiftEq =>      TokenAttr("'>>='", ">>="),
 
+            Token::As =>            TokenAttr("'as'", "as"),
             Token::Bitvec =>        TokenAttr("'bitvec'", "bitvec"),
             Token::Break =>         TokenAttr("'break'", "break"),
             Token::Case =>          TokenAttr("'case'", "case"),
@@ -235,6 +240,7 @@ impl Token {
             Token::Switch =>        TokenAttr("'switch'", "switch"),
             Token::Type =>          TokenAttr("'type'", "type"),
             Token::Unit =>          TokenAttr("'unit'", "unit"),
+            Token::Use =>           TokenAttr("'use'", "use"),
             Token::Var =>           TokenAttr("'var'", "var"),
             Token::While =>         TokenAttr("'while'", "while"),
         }

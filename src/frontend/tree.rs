@@ -35,6 +35,14 @@ pub struct UnitDecl {
     pub decls:     Vec<Decl>
 }
 
+/// Namespace import into the current lexical region
+pub enum UseDecl {
+    Single         (Path),
+    Many           (Path, Vec<Id>),
+    Aliased        (Path, Id),
+    Glob           (Path),
+}
+
 /// Declaration of a type alias
 pub struct TypeDecl {
     pub name:      String,

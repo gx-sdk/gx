@@ -240,6 +240,48 @@ impl<It: Iterator<Item = Token>> Parser<It> {
     }
 
     /// ```plain
+    /// use-decl -> 'use' path ';'
+    ///           | 'in' path 'use' id-list ';'
+    ///           | 'in' path 'use' '*' ';'
+    ///           | 'use' path 'as' id ';'
+    /// ```
+    pub fn use_decl(&mut self) -> UseDecl {
+        match self.gettok() {
+            Token::Use => {
+                let p = self.path();
+                match self.gettok() {
+                    Token::Semicolon =>
+                        UseDecl::Single(p),
+                    Token::As => {
+                        let x = self.id();
+                        self.expect(Token::Semicolon);
+                        UseDecl::Aliased(p, x)
+                    },
+                    _ => panic!("expected ';' or 'as'")
+                }
+            },
+
+            Token::In => {
+                let p = self.path();
+                self.expect(Token::Use);
+                let x = match *self.peek() {
+                    Token::Identifier(_) =>
+                        UseDecl::Many(p, self.id_list()),
+                    Token::Star => {
+                        self.gettok();
+                        UseDecl::Glob(p)
+                    }
+                    _ => panic!("expected identifier or '*'")
+                };
+                self.expect(Token::Semicolon);
+                x
+            },
+
+            _ => panic!("expected 'use' declaration")
+        }
+    }
+
+    /// ```plain
     /// type-decl -> 'type' id ':' type-spec ';'
     /// ```
     pub fn type_decl(&mut self) -> TypeDecl {
