@@ -14,7 +14,7 @@ pub type Number = isize;
 
 pub type Input = Vec<Decl>;
 
-pub type Path = Vec<Id>;
+pub struct Path(pub Vec<Id>);
 
 pub struct Decl {
     pub is_pub:    bool,
@@ -43,8 +43,8 @@ pub struct TypeDecl {
 
 /// Type specifier
 pub enum TypeSpec {
-    Alias          (Id),
-    Parameterized  (Id, Vec<Expr<Primary>>),
+    Alias          (Path),
+    Parameterized  (Path, Vec<Expr<Primary>>),
     Pointer        (Box<TypeSpec>),
     Array          (Number, Box<TypeSpec>),
     Struct         (Vec<VarDecl>),
@@ -176,8 +176,7 @@ pub struct ForStmt {
 }
 
 pub enum Primary {
-    Scoped         (Box<Primary>, Id),
-    Id             (Id),
+    Path           (Path),
     Number         (Number),
 }
 
@@ -316,11 +315,13 @@ impl Dumpable for TypeSpec {
     fn dump(&self, d: &mut DumpContext) {
         match *self {
             TypeSpec::Alias(ref x) => {
-                d.put_ln(format!("TypeSpec::Alias({})", x));
+                d.push_str("TypeSpec::Alias");
+                x.dump(d);
+                d.pop();
             },
             TypeSpec::Parameterized(ref x, ref y) => {
                 d.push_str("TypeSpec::Parameterized");
-                d.put_ln(format!("id: {}", x));
+                x.dump(d);
                 for t in y.iter() {
                     t.dump(d);
                 }
@@ -677,18 +678,26 @@ impl<P: Dumpable> Dumpable for Expr<P> {
     }
 }
 
+impl Dumpable for Path {
+    fn dump (&self, d: &mut DumpContext) {
+        if self.0.len() == 1 {
+            d.put_ln(format!("Path({})", self.0[0]));
+            return;
+        }
+
+        d.push_str("Path");
+        for nm in self.0.iter() {
+            d.put_ln(format!("{}", nm));
+        }
+        d.pop();
+    }
+}
+
 impl Dumpable for Primary {
     fn dump (&self, d: &mut DumpContext) {
         match *self {
-            Primary::Scoped(ref p, ref id) => {
-                d.push_str("Expr::Scoped");
-                p.dump(d);
-                d.put_ln(format!("field: {}", id));
-                d.pop();
-            },
-
-            Primary::Id(ref id) =>
-                d.put_ln(format!("Primary::Id({})", id)),
+            Primary::Path(ref p) =>
+                p.dump(d),
 
             Primary::Number(n) =>
                 d.put_ln(format!("Primary::Number({})", n)),

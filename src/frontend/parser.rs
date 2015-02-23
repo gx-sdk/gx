@@ -110,7 +110,7 @@ impl<It: Iterator<Item = Token>> Parser<It> {
 
             match *self.peek() {
                 Token::DblColon => { self.gettok(); },
-                _ => return v
+                _ => return Path(v)
             }
         }
     }
@@ -256,7 +256,7 @@ impl<It: Iterator<Item = Token>> Parser<It> {
     }
 
     /// ```plain
-    /// type-spec -> id
+    /// type-spec -> path
     ///            | id '<' constant-list '>'
     ///            | '*' type-spec
     ///            | '[' number ']' type-spec
@@ -265,17 +265,20 @@ impl<It: Iterator<Item = Token>> Parser<It> {
     /// ```
     pub fn type_spec(&mut self) -> TypeSpec {
         match self.gettok() {
-            Token::Identifier(id) => {
+            tok@Token::Identifier(_) => {
+                self.untok(tok);
+                let p = self.path();
+
                 match self.gettok() {
                     Token::Less => {
-                        let x = TypeSpec::Parameterized(id, self.constant_list());
+                        let x = TypeSpec::Parameterized(p, self.constant_list());
                         self.expect(Token::Greater);
                         x
                     },
 
                     x => {
                         self.untok(x);
-                        TypeSpec::Alias(id)
+                        TypeSpec::Alias(p)
                     }
                 }
             },
@@ -1271,7 +1274,6 @@ impl<It: Iterator<Item = Token>> Parser<It> {
     ///            | ex-primary '--'
     ///            | ex-primary '(' ex-list ')'
     ///            | ex-primary '.' ex-bottom
-    ///            | ex-primary '::' id
     /// ```
     pub fn ex_bottom(&mut self) -> Expr<Primary> {
         let mut left = self.ex_primary();
@@ -1296,16 +1298,6 @@ impl<It: Iterator<Item = Token>> Parser<It> {
                 },
                 Token::Dot =>
                     left = Expr::Member(Box::new(left), self.id()),
-                Token::DblColon =>
-                    left = match left {
-                        Expr::Primary(p) =>
-                            Expr::Primary(Primary::Scoped(
-                                Box::new(p),
-                                self.id()
-                            )),
-                        _ =>
-                            panic!("can only use :: on primaries"),
-                    },
 
                 tok =>
                     { self.untok(tok); return left }
@@ -1314,14 +1306,16 @@ impl<It: Iterator<Item = Token>> Parser<It> {
     }
 
     /// ```plain
-    /// ex-primary -> id
+    /// ex-primary -> path
     ///            -> constant
     ///            -> '(' expr ')'
     /// ```
     pub fn ex_primary(&mut self) -> Expr<Primary> {
         match self.gettok() {
-            Token::Identifier(x) =>
-                Expr::Primary(Primary::Id(x)),
+            tok@Token::Identifier(_) => {
+                self.untok(tok);
+                Expr::Primary(Primary::Path(self.path()))
+            }
             Token::Number(x) =>
                 Expr::Primary(Primary::Number(x as isize)),
             Token::Character(x) =>
