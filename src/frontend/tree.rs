@@ -14,6 +14,8 @@ pub type Number = isize;
 
 pub type Input = Vec<Decl>;
 
+pub type Path = Vec<Id>;
+
 pub struct Decl {
     pub is_pub:    bool,
     pub body:      DeclBody,

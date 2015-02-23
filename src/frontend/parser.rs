@@ -99,6 +99,23 @@ impl<It: Iterator<Item = Token>> Parser<It> {
     }
 
     /// ```plain
+    /// path -> id '::' path
+    ///       | id
+    /// ```
+    pub fn path(&mut self) -> Path {
+        let mut v = Vec::new();
+
+        loop {
+            v.push(self.id());
+
+            match *self.peek() {
+                Token::DblColon => { self.gettok(); },
+                _ => return v
+            }
+        }
+    }
+
+    /// ```plain
     /// constant-list -> constant ',' constant-list
     ///                | constant
     /// ```
