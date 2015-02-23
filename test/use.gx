@@ -1,0 +1,5 @@
+use Foo::Bar;
+in Foo::Bar use Bar, Baz;
+in Foo::Bar use *;
+use Foo::Bar as Baz;
+
