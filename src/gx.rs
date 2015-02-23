@@ -10,7 +10,8 @@
 // dealt with accordingly.
 #![feature(collections)]
 #![feature(core)] // required for FromStrRadix in frontend::lexer::read_int()
-#![feature(old_io)]
+#![feature(io)]
+#![feature(fs)]
 #![feature(unicode)]
 #![feature(env)] // required for std::env::args()
 
@@ -26,16 +27,37 @@ pub mod backend;
 mod driver {
     extern crate getopts;
 
-    use std::old_io::stdin;
-    use std::old_io::Chars;
-    use std::old_io::BufferedReader;
-    use std::old_io::stdio::StdReader;
     use std::env;
+    use std::error;
+    use std::fmt;
+    use std::fs;
+    use std::io;
     use frontend::tree::*;
     use frontend::lexer;
     use frontend::parser;
 
-    fn parse(ch: Chars<BufferedReader<StdReader>>) -> Input {
+    pub enum Error {
+        IO         (String, io::Error), // (Path, Error)
+        GetOpts    (getopts::Fail),
+    }
+
+    impl fmt::Display for Error {
+        fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+            use self::Error::*;
+            match *self {
+                IO(ref p, ref e) => write!(f, "Could not read file `{}`: {}", p, e),
+                GetOpts(ref e) => write!(f, "Invalid invocation of gx: {}", e),
+            }
+        }
+    }
+
+    impl error::FromError<getopts::Fail> for Error {
+        fn from_error(err: getopts::Fail) -> Error {
+            Error::GetOpts(err)
+        }
+    }
+
+    fn parse(ch: io::Chars<io::BufReader<fs::File>>) -> Input {
         parser::Parser::new(lexer::Lexer::new(ch)).file()
     }
 
@@ -47,33 +69,43 @@ mod driver {
         d.end();
     }
 
-    pub fn main() {
+    pub fn main() -> Result<(), Error> {
         let mut opts = getopts::Options::new();
 
-        // opts.optopt("o", "", "set output file name", "NAME");
         opts.optflag("", "dump", "dump parse tree");
 
         let args: Vec<String> = env::args().collect();
-        let matches = match opts.parse(args.tail()) {
-            Ok(m)   => m,
-            Err(e)  => panic!(e.to_string()),
-        };
+        let matches = try!(opts.parse(args.tail()));
 
-        // read an Input from the stream
-        let mut s = stdin();
-        let f = parse(s.lock().chars());
-
-        if matches.opt_present("dump") {
-            dump(&f);
+        // Ensure all files can be read before proceeding
+        let mut files = Vec::new();
+        for path in &matches.free {
+            let file = match fs::File::open(path) {
+                Ok(f) => f,
+                Err(e) => { return Err(Error::IO(path.clone(), e)) },
+            };
+            files.push(file);
         }
 
-        // let output = match matches.opt_str("o") {
-        //     None    => String::from_str("a.out"),
-        //     Some(x) => x,
-        // };
+        let mut inputs = Vec::new();
+        for file in files {
+            use std::io::ReadExt;
+            let mut p = parse(io::BufReader::new(file).chars());
+            inputs.append(&mut p);
+        }
+
+        if matches.opt_present("dump") {
+            dump(&inputs);
+        }
+
+        Ok(())
     }
 }
 
 fn main() {
-    driver::main();
+    let result = driver::main();
+    if let Err(e) = result {
+        println!("{}", e);
+        std::env::set_exit_status(1);
+    }
 }

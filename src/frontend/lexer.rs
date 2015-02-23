@@ -6,7 +6,7 @@
 
 //! Lexer for the `gx` language. Very simple lexer.
 
-use std::old_io::IoResult;
+use std::io;
 use std::num::FromStrRadix;
 
 use frontend::token::*;
@@ -63,7 +63,7 @@ enum LexerStep {
     EndOfInput,
 }
 
-impl<It: Iterator<Item = IoResult<char>>> Lexer<It> {
+impl<It: Iterator<Item = Result<char, io::CharsError>>> Lexer<It> {
     pub fn new(input: It) -> Lexer<It> {
         Lexer {
             input: input,
@@ -363,7 +363,7 @@ impl<It: Iterator<Item = IoResult<char>>> Lexer<It> {
     }
 }
 
-impl<It: Iterator<Item = IoResult<char>>> Iterator for Lexer<It> {
+impl<It: Iterator<Item = Result<char, io::CharsError>>> Iterator for Lexer<It> {
     type Item = Token;
 
     fn next(&mut self) -> Option<Token> {
