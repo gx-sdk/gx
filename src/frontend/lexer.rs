@@ -59,6 +59,13 @@ pub struct Lexer<It> {
     sent_eof: bool,
 }
 
+pub struct Position {
+    pub line:  usize,
+    pub col:   usize,
+}
+
+pub struct LexerToken(pub Token, pub Position);
+
 enum LexerStep {
     Step(Token),
     Again,
@@ -81,8 +88,11 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Lexer<It> {
         panic!("lexer error: {}: {}", self.line_number, msg)
     }
 
-    pub fn pos(&self) -> (usize, usize) {
-        (self.line_number, self.col_number)
+    pub fn pos(&self) -> Position {
+        Position {
+            line:  self.line_number,
+            col:   self.col_number
+        }
     }
 
     fn ungetc(&mut self, c: char) {
@@ -383,19 +393,22 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Lexer<It> {
 }
 
 impl<It: Iterator<Item = Result<char, io::CharsError>>> Iterator for Lexer<It> {
-    type Item = Token;
+    type Item = LexerToken;
 
-    fn next(&mut self) -> Option<Token> {
+    fn next(&mut self) -> Option<LexerToken> {
+        let mut p = self.pos();
         loop {
             match self.try_token() {
-                LexerStep::Step(x) => return Some(x),
-                LexerStep::Again => { },
+                LexerStep::Step(x) => return Some(LexerToken(x, p)),
+                LexerStep::Again => {
+                    p = self.pos();
+                },
                 LexerStep::EndOfInput => {
                     if self.sent_eof {
                         return None
                     } else {
                         self.sent_eof = true;
-                        return Some(Token::EOF)
+                        return Some(LexerToken(Token::EOF, p))
                     }
                 },
             }

@@ -41,7 +41,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         match self.ungot.pop() {
             Some(t) => t,
             None => match self.input.next() {
-                Some(t) => t,
+                Some(t) => t.0,
                 None => panic!("end of file when parsing"),
             }
         }
