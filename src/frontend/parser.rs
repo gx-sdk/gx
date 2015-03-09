@@ -9,8 +9,11 @@
 
 use frontend::token::Token;
 use frontend::tree::*;
+use frontend::lexer::Lexer;
 
 use expr::*;
+
+use std::io;
 
 /// An instance of a parser. If you have an `Iterator<Token>` go ahead and
 /// create one with `Parser::new`. The resulting `Parser` instance is full
@@ -18,12 +21,12 @@ use expr::*;
 /// the most relevant is probably `Parser::file`, corresponding to the start
 /// symbol.
 pub struct Parser<It> {
-    input: It,
+    input: Lexer<It>,
     ungot: Vec<Token>,
 }
 
-impl<It: Iterator<Item = Token>> Parser<It> {
-    pub fn new(input: It) -> Parser<It> {
+impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
+    pub fn new(input: Lexer<It>) -> Parser<It> {
         Parser {
             input: input,
             ungot: Vec::with_capacity(5),
