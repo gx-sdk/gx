@@ -54,6 +54,8 @@ pub struct Lexer<It> {
     input: It,
     ungot: Vec<char>,
     line_number: usize,
+    col_number: usize,
+    last_col: Option<usize>,
     sent_eof: bool,
 }
 
@@ -69,6 +71,8 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Lexer<It> {
             input: input,
             ungot: Vec::with_capacity(5),
             line_number: 1,
+            col_number: 1,
+            last_col: None,
             sent_eof: false,
         }
     }
@@ -77,10 +81,21 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Lexer<It> {
         panic!("lexer error: {}: {}", self.line_number, msg)
     }
 
+    pub fn pos(&self) -> (usize, usize) {
+        (self.line_number, self.col_number)
+    }
+
     fn ungetc(&mut self, c: char) {
         if c != '\0' {
             if c == '\n' {
-                self.line_number -= 1;
+                match self.last_col {
+                    None => panic!("lexer error: too many ungetc"),
+                    Some(c) => {
+                        self.line_number -= 1;
+                        self.col_number = c;
+                        self.last_col = None;
+                    }
+                }
             }
             self.ungot.push(c);
         }
@@ -99,9 +114,13 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Lexer<It> {
 
     fn getc(&mut self) -> Option<char> {
         let c = self.real_getc();
-        match c {
-            Some('\n') => self.line_number += 1,
-            _ => { }
+        if let Some(x) = c {
+            self.col_number += 1;
+            if x == '\n' {
+                self.line_number += 1;
+                self.last_col = Some(self.col_number);
+                self.col_number = 1;
+            }
         }
         c
     }
