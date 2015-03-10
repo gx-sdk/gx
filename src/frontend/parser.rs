@@ -633,10 +633,10 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         self.expect(Token::RBrace);
 
         FuncDecl {
-            name:      name,
-            params:    params,
-            ret:       ret,
-            body:      body
+            name:   name,
+            params: params,
+            ret:    ret,
+            body:   body
         }
     }
 
@@ -695,12 +695,20 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// stmt-list -> stmt stmt-list | ə
     /// ```
     pub fn stmt_list(&mut self) -> Stmt {
+        let start = self.pos();
         let mut stmts = Vec::new();
 
         loop {
             match self.stmt_o() {
                 Some(x)  => stmts.push(x),
-                None     => return Stmt::Compound(stmts),
+                None =>
+                    return Stmt {
+                        body: StmtBody::Compound(stmts),
+                        span: Span {
+                            start: start,
+                            end:   self.pos()
+                        }
+                    },
             }
         }
     }
@@ -715,7 +723,14 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
                 Some(st)
             },
 
-            Token::Var      => Some(Stmt::Var(self.var_decl())),
+            Token::Var      =>
+                Some(Stmt {
+                    body: StmtBody::Var(self.var_decl()),
+                    span: Span {
+                        start: tok.1,
+                        end:   self.pos()
+                    }
+                }),
 
             Token::If       => { self.untok(tok); Some(self.if_stmt()) },
             Token::Switch   => { self.untok(tok); Some(self.switch_stmt()) },
@@ -723,17 +738,24 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
             Token::While    => { self.untok(tok); Some(self.while_stmt()) },
             Token::For      => { self.untok(tok); Some(self.for_stmt()) },
 
-            Token::Break    => { self.stmt_simple_o(Stmt::Break) },
-            Token::Continue => { self.stmt_simple_o(Stmt::Continue) },
-            Token::Repeat   => { self.stmt_simple_o(Stmt::Repeat) },
+            Token::Break    => { self.stmt_simple_o(tok.1, StmtBody::Break) },
+            Token::Continue => { self.stmt_simple_o(tok.1, StmtBody::Continue) },
+            Token::Repeat   => { self.stmt_simple_o(tok.1, StmtBody::Repeat) },
 
             Token::Return => {
                 match self.gettok() {
-                    LexerToken(Token::Semicolon, _) => Some(Stmt::Return(None)),
+                    LexerToken(Token::Semicolon, end) =>
+                        Some(Stmt {
+                            body: StmtBody::Return(None),
+                            span: Span {
+                                start: tok.1,
+                                end:   end,
+                            }
+                        }),
                     x => {
                         self.untok(x);
                         let ex = self.expr();
-                        self.stmt_simple_o(Stmt::Return(Some(ex)))
+                        self.stmt_simple_o(tok.1, StmtBody::Return(Some(ex)))
                     }
                 }
             },
@@ -751,9 +773,10 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
             Token::String(_)      |
             Token::Character(_)   |
             Token::LParen         => {
+                let start = tok.1;
                 self.untok(tok);
                 let ex = self.expr();
-                self.stmt_simple_o(Stmt::Eval(ex))
+                self.stmt_simple_o(start, StmtBody::Eval(ex))
             },
 
             _ => { self.untok(tok); None }
@@ -782,9 +805,15 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         }
     }
 
-    fn stmt_simple_o(&mut self, stmt: Stmt) -> Option<Stmt> {
+    fn stmt_simple_o(&mut self, p: Position, body: StmtBody) -> Option<Stmt> {
         self.expect(Token::Semicolon);
-        Some(stmt)
+        Some(Stmt {
+            body: body,
+            span: Span {
+                start: p,
+                end:   self.pos()
+            }
+        })
     }
 
     /// ```plain
@@ -792,6 +821,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///          | if '(' expr ')' stmt 'else' stmt
     /// ```
     pub fn if_stmt(&mut self) -> Stmt {
+        let start = self.pos();
         self.expect(Token::If);
         self.expect(Token::LParen);
         let cond = self.expr();
@@ -802,17 +832,24 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
             x => { self.untok(x); None },
         };
 
-        Stmt::If(IfStmt {
-            cond:      cond,
-            tb:        tb,
-            fb:        fb,
-        })
+        Stmt {
+            body: StmtBody::If(IfStmt {
+                cond: cond,
+                tb:   tb,
+                fb:   fb,
+            }),
+            span: Span {
+                start: start,
+                end:   self.pos()
+            }
+        }
     }
 
     /// ```plain
     /// switch-stmt -> 'switch' '(' expr ')' '{' switch-body '}'
     /// ```
     pub fn switch_stmt(&mut self) -> Stmt {
+        let start = self.pos();
         self.expect(Token::Switch);
         self.expect(Token::LParen);
         let ex = self.expr();
@@ -821,10 +858,16 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         let body = self.switch_body();
         self.expect(Token::RBrace);
 
-        Stmt::Switch(SwitchStmt {
-            ex:        ex,
-            cases:     body,
-        })
+        Stmt {
+            body: StmtBody::Switch(SwitchStmt {
+                ex:    ex,
+                cases: body,
+            }),
+            span: Span {
+                start: start,
+                end:   self.pos()
+            }
+        }
     }
 
     /// ```plain
@@ -873,32 +916,49 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// loop-stmt -> 'loop' stmt
     /// ```
     pub fn loop_stmt(&mut self) -> Stmt {
+        let start = self.pos();
         self.expect(Token::Loop);
 
-        Stmt::Loop(LoopStmt {
-            body:      Box::new(self.stmt())
-        })
+        let body = StmtBody::Loop(LoopStmt {
+            body: Box::new(self.stmt())
+        });
+        Stmt {
+            body: body,
+            span: Span {
+                start: start,
+                end:   self.pos()
+            }
+        }
     }
 
     /// ```plain
     /// while-stmt -> 'while' '(' expr ')' stmt
     /// ```
     pub fn while_stmt(&mut self) -> Stmt {
+        let start = self.pos();
         self.expect(Token::While);
         self.expect(Token::LParen);
         let cond = self.expr();
         self.expect(Token::RParen);
 
-        Stmt::While(WhileStmt {
-            cond:      cond,
-            body:      Box::new(self.stmt()),
-        })
+        let body = StmtBody::While(WhileStmt {
+            cond: cond,
+            body: Box::new(self.stmt()),
+        });
+        Stmt {
+            body: body,
+            span: Span {
+                start: start,
+                end:   self.pos()
+            }
+        }
     }
 
     /// ```plain
     /// for-stmt -> 'for' '(' id 'in' expr ')' stmt
     /// ```
     pub fn for_stmt(&mut self) -> Stmt {
+        let start = self.pos();
         self.expect(Token::For);
         self.expect(Token::LParen);
         let id = self.id();
@@ -906,11 +966,18 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         let iter = self.expr();
         self.expect(Token::RParen);
 
-        Stmt::For(ForStmt {
-            id:        id,
-            iter:      iter,
-            body:      Box::new(self.stmt()),
-        })
+        let body = StmtBody::For(ForStmt {
+            id:   id,
+            iter: iter,
+            body: Box::new(self.stmt()),
+        });
+        Stmt {
+            body: body,
+            span: Span {
+                start: start,
+                end:   self.pos()
+            }
+        }
     }
 
     /// ```plain

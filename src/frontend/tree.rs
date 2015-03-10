@@ -125,8 +125,13 @@ pub struct FuncParam {
     pub typ:       TypeSpec,
 }
 
-/// Program statement
-pub enum Stmt {
+pub struct Stmt {
+    pub body:      StmtBody,
+    pub span:      Span
+}
+
+/// Program statement body
+pub enum StmtBody {
     /// Evaluate the given expression and discard the result
     Eval           (Expr<Primary>),
     /// Execute the statements in order
@@ -557,38 +562,47 @@ impl Dumpable for FuncParam {
 
 impl Dumpable for Stmt {
     fn dump(&self, d: &mut DumpContext) {
+        d.push_str("Stmt");
+        self.body.dump(d);
+        self.span.dump(d);
+        d.pop();
+    }
+}
+
+impl Dumpable for StmtBody {
+    fn dump(&self, d: &mut DumpContext) {
         match *self {
-            Stmt::Eval(ref ex) => {
-                d.push_str("Stmt::Eval");
+            StmtBody::Eval(ref ex) => {
+                d.push_str("StmtBody::Eval");
                 ex.dump(d);
                 d.pop();
             },
-            Stmt::Compound(ref v) => {
-                d.push_str("Stmt::Compound");
+            StmtBody::Compound(ref v) => {
+                d.push_str("StmtBody::Compound");
                 for st in v.iter() {
                     st.dump(d);
                 }
                 d.pop();
             },
-            Stmt::Var(ref decl) =>
+            StmtBody::Var(ref decl) =>
                 decl.dump(d),
-            Stmt::If(ref f) =>
+            StmtBody::If(ref f) =>
                 f.dump(d),
-            Stmt::Switch(ref s) =>
+            StmtBody::Switch(ref s) =>
                 s.dump(d),
-            Stmt::Loop(ref l) =>
+            StmtBody::Loop(ref l) =>
                 l.dump(d),
-            Stmt::While(ref w) =>
+            StmtBody::While(ref w) =>
                 w.dump(d),
-            Stmt::For(ref f) =>
+            StmtBody::For(ref f) =>
                 f.dump(d),
-            Stmt::Break =>
+            StmtBody::Break =>
                 d.put_ln_str("Stmt::Break"),
-            Stmt::Continue =>
+            StmtBody::Continue =>
                 d.put_ln_str("Stmt::Continue"),
-            Stmt::Repeat =>
+            StmtBody::Repeat =>
                 d.put_ln_str("Stmt::Repeat"),
-            Stmt::Return(ref t) => {
+            StmtBody::Return(ref t) => {
                 match *t {
                     Some(ref ex) => {
                         d.push_str("Stmt::Return");
