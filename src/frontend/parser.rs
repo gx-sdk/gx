@@ -11,6 +11,7 @@ use frontend::token::Token;
 use frontend::tree::*;
 use frontend::lexer::Lexer;
 use frontend::lexer::LexerToken;
+use frontend::lexer::Position;
 
 use expr::*;
 
@@ -31,6 +32,14 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         Parser {
             input: input,
             ungot: Vec::with_capacity(5),
+        }
+    }
+
+    fn pos(&mut self) -> Position {
+        if self.ungot.len() == 0 {
+            self.input.pos()
+        } else {
+            self.ungot[self.ungot.len() - 1].1
         }
     }
 
@@ -198,14 +207,20 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// decl-scope -> pub | ə
     /// ```
     pub fn decl(&mut self) -> Decl {
+        let start = self.pos();
         let is_pub = match self.gettok() {
             LexerToken(Token::Pub, _) => true,
             x => { self.untok(x); false }
         };
+        let body = self.decl_body();
 
         Decl {
             is_pub:        is_pub,
-            body:          self.decl_body(),
+            body:          body,
+            span: Span {
+                start:     start,
+                end:       self.pos(),
+            }
         }
     }
 

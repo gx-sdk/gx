@@ -7,6 +7,8 @@
 //! Parse tree structures. Most of these match almost exactly with the
 //! equivalents in the grammar.
 
+use frontend::lexer::Position;
+
 use expr::Expr;
 
 pub type Id = String;
@@ -16,9 +18,15 @@ pub type Input = Vec<Decl>;
 
 pub struct Path(pub Vec<Id>);
 
+pub struct Span {
+    pub start:     Position,
+    pub end:       Position,
+}
+
 pub struct Decl {
     pub is_pub:    bool,
     pub body:      DeclBody,
+    pub span:      Span,
 }
 pub enum DeclBody {
     Unit           (UnitDecl),
@@ -259,11 +267,21 @@ impl DumpContext {
     }
 }
 
+impl Dumpable for Span {
+    fn dump(&self, d: &mut DumpContext) {
+        d.put_ln(format!("Span({},{} -> {},{})",
+            self.start.line, self.start.col,
+            self.end.line,   self.end.col
+            ));
+    }
+}
+
 impl Dumpable for Decl {
     fn dump(&self, d: &mut DumpContext) {
         d.push_str("Decl");
         d.put_ln(format!("pub: {}", self.is_pub));
         self.body.dump(d);
+        self.span.dump(d);
         d.pop();
     }
 }

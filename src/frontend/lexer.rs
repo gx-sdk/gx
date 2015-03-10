@@ -59,6 +59,7 @@ pub struct Lexer<It> {
     sent_eof: bool,
 }
 
+#[derive(Copy)]
 pub struct Position {
     pub line:  usize,
     pub col:   usize,
@@ -106,6 +107,8 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Lexer<It> {
                         self.last_col = None;
                     }
                 }
+            } else {
+                self.col_number -= 1;
             }
             self.ungot.push(c);
         }
