@@ -1,0 +1,115 @@
+// gx language implementation
+// Copyright (C) 2015 Alex Iadicicco <http://ajitek.net>
+//
+// For licensing information, refer to the COPYING file
+// in the project root
+
+//! Message handling core
+
+use std::fmt;
+
+/// Represents a position in the input. Both `line` and `col` can take a
+/// value of 0 to indicate that neither is relevant to the condition at
+/// hand. If `line` is 0, then `col` can reasonably be assumed to be 0.
+pub struct Position {
+    pub file:          String,
+    pub line:          usize,
+    pub col:           usize,
+}
+
+impl fmt::Debug for Position {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.line == 0 {
+            f.write_str(&self.file[..])
+        } else if self.col == 0 {
+            write!(f, "{}:{}", self.file, self.line)
+        } else {
+            write!(f, "{}:{}:{}", self.file, self.line, self.col)
+        }
+    }
+}
+
+/// A structure representing a generic error to be reported. If `end` is `None`,
+/// then the error occurs exactly at `start`. If `start` is `None`, then the
+/// error concerns the entire environment.
+pub struct Message {
+    pub kind:          MessageKind,
+    pub msg:           String,
+    pub start:         Option<Position>,
+    pub end:           Option<Position>,
+}
+
+impl fmt::Display for Message {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // print the message kind
+        try!(write!(f, "{}:", match self.kind {
+            MessageKind::Internal => "internal",
+            MessageKind::Fatal    => "fatal",
+            MessageKind::Error    => "error",
+            MessageKind::Warning  => "warning",
+            MessageKind::Info     => "note"
+        }));
+
+        // then the range
+        match self.start {
+            None => {}
+            Some(ref start) => {
+                try!(write!(f, " {:?}", start));
+                match self.end {
+                    None => {}
+                    Some(ref end) => {
+                        let put_file =              start.file != end.file;
+                        let put_line = put_file || (start.line != end.line);
+                        let put_col  = put_line || (start.col  != end.col);
+                        let mut colon = "";
+
+                        try!(write!(f, "-"));
+                        if put_file {
+                            try!(write!(f, "{}", end.file));
+                            colon = ":";
+                        }
+                        if put_line && end.line != 0 {
+                            try!(write!(f, "{}{}", colon, end.line));
+                            colon = ":";
+                        }
+                        if put_col && end.col != 0 {
+                            try!(write!(f, "{}{}", colon, end.col));
+                        }
+                    }
+                }
+                try!(write!(f, ":"));
+            }
+        }
+
+        // then the actual text of the message
+        try!(write!(f, " {}", self.msg));
+
+        Ok(())
+    }
+}
+
+/// Used to indicate the severity or context of an error message.
+pub enum MessageKind {
+    /// The error originated from within the compiler itself. The occurrence
+    /// of such an error is a bug and should be reported.
+    Internal,
+
+    /// The error is unrecoverable; compiling stops immediately. This should
+    /// be used for cases not directly concerning the input, such as errors
+    /// in the environment or with the command line.
+    Fatal,
+
+    /// The error is unrecoverable; compiling stops immediately. This should
+    /// be used only for cases concerning the input, such as syntax errors
+    /// or semantic errors.
+    Error,
+
+    /// The error is recoverable but the user should still be notified of
+    /// the condition. Should be used to indicate potential problems with the
+    /// input.
+    Warning,
+
+    /// The message is a diagnostic message. Potential use cases include
+    /// informing the user of missed optimization opportunities.
+    Info
+}
