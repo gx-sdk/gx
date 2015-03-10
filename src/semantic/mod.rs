@@ -15,7 +15,3 @@
 //! The various submodules correspond to the different portions of the
 //! semantic graphs, however there is significant interdependence between
 //! them.
-
-pub mod types;
-pub mod program;
-pub mod symbol;
