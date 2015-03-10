@@ -10,6 +10,7 @@
 use frontend::token::Token;
 use frontend::tree::*;
 use frontend::lexer::Lexer;
+use frontend::lexer::LexerToken;
 
 use expr::*;
 
@@ -22,7 +23,7 @@ use std::io;
 /// symbol.
 pub struct Parser<It> {
     input: Lexer<It>,
-    ungot: Vec<Token>,
+    ungot: Vec<LexerToken>,
 }
 
 impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
@@ -33,15 +34,15 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         }
     }
 
-    fn untok(&mut self, t: Token) {
+    fn untok(&mut self, t: LexerToken) {
         self.ungot.push(t);
     }
 
-    fn gettok(&mut self) -> Token {
+    fn gettok(&mut self) -> LexerToken {
         match self.ungot.pop() {
             Some(t) => t,
             None => match self.input.next() {
-                Some(t) => t.0,
+                Some(t) => t,
                 None => panic!("end of file when parsing"),
             }
         }
@@ -50,26 +51,26 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     fn expect(&mut self, t: Token) {
         let t_ = self.gettok();
 
-        if t != t_ {
-            panic!("expected {:?}, got {:?}", t, t_)
+        if t != t_.0 {
+            panic!("expected {:?}, got {:?}", t, t_.0)
         }
     }
 
     fn peek(&mut self) -> &Token {
         let t = self.gettok();
         self.untok(t);
-        return &self.ungot[self.ungot.len() - 1];
+        return &self.ungot[self.ungot.len() - 1].0;
     }
 
     pub fn id(&mut self) -> Id {
-        match self.gettok() {
+        match self.gettok().0 {
             Token::Identifier(x) => x,
             _ => panic!("expected identifier"),
         }
     }
 
     pub fn constant(&mut self) -> Expr<Primary> {
-        Expr::Primary(match self.gettok() {
+        Expr::Primary(match self.gettok().0 {
             Token::Number(x) =>     Primary::Number(x as isize),
             Token::Character(x) =>  Primary::Number(x as isize),
             _ => panic!("expected constant"),
@@ -77,7 +78,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     }
 
     pub fn number(&mut self) -> Number {
-        match self.gettok() {
+        match self.gettok().0 {
             Token::Number(x) =>     x as isize,
             Token::Character(x) =>  x as isize,
             _ => panic!("expected number"),
@@ -198,8 +199,8 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// ```
     pub fn decl(&mut self) -> Decl {
         let is_pub = match self.gettok() {
-            Token::Pub     => true,
-            x              => { self.untok(x); false }
+            LexerToken(Token::Pub, _) => true,
+            x => { self.untok(x); false }
         };
 
         Decl {
@@ -254,10 +255,10 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///           | 'use' path 'as' id ';'
     /// ```
     pub fn use_decl(&mut self) -> UseDecl {
-        match self.gettok() {
+        match self.gettok().0 {
             Token::Use => {
                 let p = self.path();
-                match self.gettok() {
+                match self.gettok().0 {
                     Token::Semicolon =>
                         UseDecl::Single(p),
                     Token::As => {
@@ -314,13 +315,14 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///            | bitvec-spec
     /// ```
     pub fn type_spec(&mut self) -> TypeSpec {
-        match self.gettok() {
-            tok@Token::Identifier(_) => {
+        let tok = self.gettok();
+        match tok.0 {
+            Token::Identifier(_) => {
                 self.untok(tok);
                 let p = self.path();
 
                 match self.gettok() {
-                    Token::Less => {
+                    LexerToken(Token::Less, _) => {
                         let x = TypeSpec::Parameterized(p, self.constant_list());
                         self.expect(Token::Greater);
                         x
@@ -344,12 +346,12 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
             },
 
             Token::Struct => {
-                self.untok(Token::Struct);
+                self.untok(tok);
                 self.struct_spec()
             },
 
             Token::Bitvec => {
-                self.untok(Token::Bitvec);
+                self.untok(tok);
                 self.bitvec_spec()
             },
 
@@ -407,8 +409,8 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
             body.push(self.bitvec_member());
 
             match self.gettok() {
-                Token::Comma  => { },
-                x             => { self.untok(x); break },
+                LexerToken(Token::Comma, _) => { },
+                x => { self.untok(x); break },
             }
         }
 
@@ -422,7 +424,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///                | id ':' number
     /// ```
     pub fn bitvec_member(&mut self) -> BitvecMember {
-        match self.gettok() {
+        match self.gettok().0 {
             Token::Identifier(x) => {
                 self.expect(Token::Colon);
                 BitvecMember::Variable(x, self.number())
@@ -472,8 +474,8 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// ```
     pub fn storage_loc(&mut self) -> StorageLoc {
         match self.gettok() {
-            Token::Ram => StorageLoc::RAM,
-            Token::Rom => StorageLoc::ROM,
+            LexerToken(Token::Ram, _) => StorageLoc::RAM,
+            LexerToken(Token::Rom, _) => StorageLoc::ROM,
             x => { self.untok(x); StorageLoc::Default },
         }
     }
@@ -518,7 +520,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         let ids = self.id_list();
         self.expect(Token::Colon);
         let typ = self.type_spec();
-        let init = match self.gettok() {
+        let init = match self.gettok().0 {
             Token::Semicolon => None,
             Token::Assign => {
                 let x = Some(self.expr());
@@ -628,7 +630,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// ```
     pub fn func_return(&mut self) -> Option<TypeSpec> {
         match self.gettok() {
-            Token::Colon => Some(self.type_spec()),
+            LexerToken(Token::Colon, _) => Some(self.type_spec()),
             x => { self.untok(x); None }
         }
     }
@@ -648,8 +650,8 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
             }
 
             match self.gettok() {
-                Token::Comma   => { },
-                x              => { self.untok(x); return params; }
+                LexerToken(Token::Comma, _) => { },
+                x => { self.untok(x); return params; }
             }
         }
     }
@@ -691,7 +693,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     fn stmt_o(&mut self) -> Option<Stmt> {
         let tok = self.gettok();
 
-        match tok {
+        match tok.0 {
             Token::LBrace => {
                 let st = self.stmt_list();
                 self.expect(Token::RBrace);
@@ -712,7 +714,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
 
             Token::Return => {
                 match self.gettok() {
-                    Token::Semicolon => Some(Stmt::Return(None)),
+                    LexerToken(Token::Semicolon, _) => Some(Stmt::Return(None)),
                     x => {
                         self.untok(x);
                         let ex = self.expr();
@@ -781,7 +783,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         self.expect(Token::RParen);
         let tb = Box::new(self.stmt());
         let fb = match self.gettok() {
-            Token::Else => Some(Box::new(self.stmt())),
+            LexerToken(Token::Else, _) => Some(Box::new(self.stmt())),
             x => { self.untok(x); None },
         };
 
@@ -836,7 +838,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///              | 'default' ':' stmt-list
     /// ```
     pub fn switch_case(&mut self) -> SwitchCase {
-        match self.gettok() {
+        match self.gettok().0 {
             Token::Case => {
                 let c = self.constant();
                 self.expect(Token::Colon);
@@ -945,7 +947,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
 
         loop {
             match self.gettok() {
-                Token::Comma => vec.push(self.ex_assign()),
+                LexerToken(Token::Comma, _) => vec.push(self.ex_assign()),
                 x => { self.untok(x); return Expr::Comma(vec) }
             }
         }
@@ -1023,14 +1025,15 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         let mut left = self.ex_land();
 
         loop {
-            match self.gettok() {
+            let tok = self.gettok();
+            match tok.0 {
                 Token::DblPipe =>
                     left = Expr::Binary(
                         BinOp::BoolOr,
                         Box::new(left),
                         Box::new(self.ex_land())
                     ),
-                tok =>
+                _ =>
                     { self.untok(tok); return left }
             }
         }
@@ -1044,14 +1047,15 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         let mut left = self.ex_bor();
 
         loop {
-            match self.gettok() {
+            let tok = self.gettok();
+            match tok.0 {
                 Token::DblAmp =>
                     left = Expr::Binary(
                         BinOp::BoolAnd,
                         Box::new(left),
                         Box::new(self.ex_bor())
                     ),
-                tok =>
+                _ =>
                     { self.untok(tok); return left }
             }
         }
@@ -1065,14 +1069,15 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         let mut left = self.ex_bxor();
 
         loop {
-            match self.gettok() {
+            let tok = self.gettok();
+            match tok.0 {
                 Token::Pipe =>
                     left = Expr::Binary(
                         BinOp::BitOr,
                         Box::new(left),
                         Box::new(self.ex_bxor())
                     ),
-                tok =>
+                _ =>
                     { self.untok(tok); return left }
             }
         }
@@ -1086,14 +1091,15 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         let mut left = self.ex_band();
 
         loop {
-            match self.gettok() {
+            let tok = self.gettok();
+            match tok.0 {
                 Token::Caret =>
                     left = Expr::Binary(
                         BinOp::BitXor,
                         Box::new(left),
                         Box::new(self.ex_band())
                     ),
-                tok =>
+                _ =>
                     { self.untok(tok); return left }
             }
         }
@@ -1107,14 +1113,15 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         let mut left = self.ex_eq();
 
         loop {
-            match self.gettok() {
+            let tok = self.gettok();
+            match tok.0 {
                 Token::Amp =>
                     left = Expr::Binary(
                         BinOp::BitAnd,
                         Box::new(left),
                         Box::new(self.ex_eq())
                     ),
-                tok =>
+                _ =>
                     { self.untok(tok); return left }
             }
         }
@@ -1129,7 +1136,8 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         let mut left = self.ex_cmp();
 
         loop {
-            match self.gettok() {
+            let tok = self.gettok();
+            match tok.0 {
                 Token::Eq =>
                     left = Expr::Binary(
                         BinOp::Eq,
@@ -1143,7 +1151,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
                         Box::new(self.ex_cmp())
                     ),
 
-                tok =>
+                _ =>
                     { self.untok(tok); return left }
             }
         }
@@ -1160,7 +1168,8 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         let mut left = self.ex_shift();
 
         loop {
-            match self.gettok() {
+            let tok = self.gettok();
+            match tok.0 {
                 Token::Less =>
                     left = Expr::Binary(
                         BinOp::Less,
@@ -1186,7 +1195,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
                         Box::new(self.ex_shift())
                     ),
 
-                tok =>
+                _ =>
                     { self.untok(tok); return left }
             }
         }
@@ -1201,7 +1210,8 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         let mut left = self.ex_add();
 
         loop {
-            match self.gettok() {
+            let tok = self.gettok();
+            match tok.0 {
                 Token::LShift =>
                     left = Expr::Binary(
                         BinOp::LShift,
@@ -1215,7 +1225,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
                         Box::new(self.ex_add())
                     ),
 
-                tok =>
+                _ =>
                     { self.untok(tok); return left }
             }
         }
@@ -1230,7 +1240,8 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         let mut left = self.ex_mul();
 
         loop {
-            match self.gettok() {
+            let tok = self.gettok();
+            match tok.0 {
                 Token::Plus =>
                     left = Expr::Binary(
                         BinOp::Add,
@@ -1244,7 +1255,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
                         Box::new(self.ex_mul())
                     ),
 
-                tok =>
+                _ =>
                     { self.untok(tok); return left }
             }
         }
@@ -1260,7 +1271,8 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         let mut left = self.ex_unary();
 
         loop {
-            match self.gettok() {
+            let tok = self.gettok();
+            match tok.0 {
                 Token::Star =>
                     left = Expr::Binary(
                         BinOp::Mul,
@@ -1280,7 +1292,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
                         Box::new(self.ex_unary())
                     ),
 
-                tok =>
+                _ =>
                     { self.untok(tok); return left }
             }
         }
@@ -1297,7 +1309,9 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///           | ex-bottom
     /// ```
     pub fn ex_unary(&mut self) -> Expr<Primary> {
-        match self.gettok() {
+        let tok = self.gettok();
+
+        match tok.0 {
             Token::Incr =>
                 Expr::Unary(UnOp::PreIncr, Box::new(self.ex_unary())),
             Token::Decr =>
@@ -1313,7 +1327,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
             Token::Sizeof =>
                 Expr::Unary(UnOp::SizeOf, Box::new(self.ex_unary())),
 
-            tok =>
+            _ =>
                 { self.untok(tok); self.ex_bottom() }
         }
     }
@@ -1329,7 +1343,9 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         let mut left = self.ex_primary();
 
         loop {
-            match self.gettok() {
+            let tok = self.gettok();
+
+            match tok.0 {
                 Token::Incr =>
                     return Expr::Unary(UnOp::PostIncr, Box::new(left)),
                 Token::Decr =>
@@ -1349,7 +1365,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
                 Token::Dot =>
                     left = Expr::Member(Box::new(left), self.id()),
 
-                tok =>
+                _ =>
                     { self.untok(tok); return left }
             }
         }
@@ -1361,8 +1377,10 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///            -> '(' expr ')'
     /// ```
     pub fn ex_primary(&mut self) -> Expr<Primary> {
-        match self.gettok() {
-            tok@Token::Identifier(_) => {
+        let tok = self.gettok();
+
+        match tok.0 {
+            Token::Identifier(_) => {
                 self.untok(tok);
                 Expr::Primary(Primary::Path(self.path()))
             }
