@@ -12,10 +12,12 @@ use frontend::tree::*;
 use frontend::lexer::Lexer;
 use frontend::lexer::LexerToken;
 use frontend::lexer::Position;
+use msg;
 
 use expr::*;
 
 use std::io;
+use std::result;
 
 /// An instance of a parser. If you have an `Iterator<Token>` go ahead and
 /// create one with `Parser::new`. The resulting `Parser` instance is full
@@ -27,7 +29,9 @@ pub struct Parser<It> {
     ungot: Vec<LexerToken>,
 }
 
-impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
+pub type Result<T> = result::Result<T, msg::Message>;
+
+impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
     pub fn new(input: Lexer<It>) -> Parser<It> {
         Parser {
             input: input,
@@ -43,70 +47,93 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
         }
     }
 
+    fn error(&mut self, p: Position, msg: String) -> msg::Message {
+        msg::Message {
+            kind:   msg::MessageKind::Error,
+            msg:    msg,
+            start:  Some(msg::Position {
+                file:  self.input.file.clone(),
+                line:  p.line,
+                col:   p.col
+            }),
+            end:    None
+        }
+    }
+
+    fn error_here(&mut self, msg: &str) -> msg::Message {
+        let here = self.pos();
+        self.error(here, String::from_str(msg))
+    }
+
     fn untok(&mut self, t: LexerToken) {
         self.ungot.push(t);
     }
 
-    fn gettok(&mut self) -> LexerToken {
+    fn gettok(&mut self) -> Result<LexerToken> {
         match self.ungot.pop() {
-            Some(t) => t,
+            Some(t) => Ok(t),
             None => match self.input.next() {
-                Some(t) => t,
-                None => panic!("end of file when parsing"),
+                Some(t) => Ok(t),
+                None => Err(self.error_here("unexpected end of file")),
             }
         }
     }
 
-    fn expect(&mut self, t: Token) {
-        let t_ = self.gettok();
+    fn expect(&mut self, t: Token) -> Result<LexerToken> {
+        let t_ = try!(self.gettok());
 
         if t != t_.0 {
-            panic!("expected {:?}, got {:?}", t, t_.0)
+            Err(self.error(t_.1, format!("expected {:?}, got {:?}", t, t_.0)))
+        } else {
+            Ok(t_)
         }
     }
 
-    fn peek(&mut self) -> &Token {
-        let t = self.gettok();
+    fn peek(&mut self) -> Result<&Token> {
+        let t = try!(self.gettok());
         self.untok(t);
-        return &self.ungot[self.ungot.len() - 1].0;
+        return Ok(&self.ungot[self.ungot.len() - 1].0);
     }
 
-    pub fn id(&mut self) -> Id {
-        match self.gettok().0 {
-            Token::Identifier(x) => x,
-            _ => panic!("expected identifier"),
+    pub fn id(&mut self) -> Result<Id> {
+        let tok = try!(self.gettok());
+        match tok.0 {
+            Token::Identifier(x) => Ok(x),
+            _ => Err(self.error(tok.1, format!("expected identifier"))),
         }
     }
 
-    pub fn constant(&mut self) -> Expr<Primary> {
-        Expr::Primary(match self.gettok().0 {
+    pub fn constant(&mut self) -> Result<Expr<Primary>> {
+        let tok = try!(self.gettok());
+        Ok(Expr::Primary(match tok.0 {
             Token::Number(x) =>     Primary::Number(x as isize),
             Token::Character(x) =>  Primary::Number(x as isize),
-            _ => panic!("expected constant"),
-        })
+            _ => return Err(self.error(tok.1, format!("expected constant"))),
+        }))
     }
 
-    pub fn number(&mut self) -> Number {
-        match self.gettok().0 {
+    pub fn number(&mut self) -> Result<Number> {
+        let tok = try!(self.gettok());
+        Ok(match tok.0 {
             Token::Number(x) =>     x as isize,
             Token::Character(x) =>  x as isize,
-            _ => panic!("expected number"),
-        }
+            _ => return Err(self.error(tok.1, format!("expected number"))),
+        })
     }
 
     /// ```plain
     /// id-list -> id ',' id-list
     ///          | id
     /// ```
-    pub fn id_list(&mut self) -> Vec<Id> {
+    pub fn id_list(&mut self) -> Result<Vec<Id>> {
         let mut v = Vec::new();
 
         loop {
-            v.push(self.id());
+            v.push(try!(self.id()));
 
-            match *self.peek() {
-                Token::Comma => { self.gettok(); },
-                _ => return v
+            match *try!(self.peek()) {
+                Token::Comma => { try!(self.gettok()); },
+                _ => return Ok(v)
             }
         }
     }
@@ -115,15 +142,15 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// path -> id '::' path
     ///       | id
     /// ```
-    pub fn path(&mut self) -> Path {
+    pub fn path(&mut self) -> Result<Path> {
         let mut v = Vec::new();
 
         loop {
-            v.push(self.id());
+            v.push(try!(self.id()));
 
-            match *self.peek() {
-                Token::DblColon => { self.gettok(); },
-                _ => return Path(v)
+            match *try!(self.peek()) {
+                Token::DblColon => { try!(self.gettok()); },
+                _ => return Ok(Path(v))
             }
         }
     }
@@ -132,15 +159,15 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// constant-list -> constant ',' constant-list
     ///                | constant
     /// ```
-    pub fn constant_list(&mut self) -> Vec<Expr<Primary>> {
+    pub fn constant_list(&mut self) -> Result<Vec<Expr<Primary>>> {
         let mut v = Vec::new();
 
         loop {
-            v.push(self.constant());
+            v.push(try!(self.constant()));
 
-            match *self.peek() {
-                Token::Comma => { self.gettok(); },
-                _ => return v
+            match *try!(self.peek()) {
+                Token::Comma => { try!(self.gettok()); },
+                _ => return Ok(v)
             }
         }
     }
@@ -148,24 +175,24 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// ```plain
     /// file -> file' EOF
     /// ```
-    pub fn file(&mut self) -> Input {
-        let v = self.file_p();
-        self.expect(Token::EOF);
+    pub fn file(&mut self) -> Result<Input> {
+        let v = try!(self.file_p());
+        try!(self.expect(Token::EOF));
 
-        v
+        Ok(v)
     }
 
     /// ```plain
     /// file' -> decl file'
     ///        | ə
     /// ```
-    pub fn file_p(&mut self) -> Input {
+    pub fn file_p(&mut self) -> Result<Input> {
         let mut v = Vec::new();
 
         loop {
-            match self.decl_o() {
-                Some(d)  => v.push(d),
-                None => return v,
+            match try!(self.decl_o()) {
+                Some(d) => v.push(d),
+                None => return Ok(v),
             }
         }
     }
@@ -174,19 +201,19 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// decl-list -> decl decl-list
     ///            | ə
     /// ```
-    pub fn decl_list(&mut self) -> Vec<Decl> {
+    pub fn decl_list(&mut self) -> Result<Vec<Decl>> {
         let mut v = Vec::new();
 
         loop {
-            match self.decl_o() {
-                Some(x)    => v.push(x),
-                _          => return v,
+            match try!(self.decl_o()) {
+                Some(x) => v.push(x),
+                _ => return Ok(v),
             }
         }
     }
 
-    fn decl_o(&mut self) -> Option<Decl> {
-        match *self.peek() {
+    fn decl_o(&mut self) -> Result<Option<Decl>> {
+        match *try!(self.peek()) {
             Token::Pub     |
             Token::Unit    |
             Token::Use     |
@@ -196,9 +223,9 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
             Token::Var     |
             Token::Const   |
             Token::Region  =>
-                Some(self.decl()),
+                Ok(Some(try!(self.decl()))),
             _ =>
-                None
+                Ok(None)
         }
     }
 
@@ -206,22 +233,22 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// decl -> decl-scope decl-body
     /// decl-scope -> pub | ə
     /// ```
-    pub fn decl(&mut self) -> Decl {
+    pub fn decl(&mut self) -> Result<Decl> {
         let start = self.pos();
-        let is_pub = match self.gettok() {
+        let is_pub = match try!(self.gettok()) {
             LexerToken(Token::Pub, _) => true,
             x => { self.untok(x); false }
         };
-        let body = self.decl_body();
+        let body = try!(self.decl_body());
 
-        Decl {
+        Ok(Decl {
             is_pub:        is_pub,
             body:          body,
             span: Span {
                 start:     start,
                 end:       self.pos(),
             }
-        }
+        })
     }
 
     /// ```plain
@@ -233,34 +260,34 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///            | const-decl
     ///            | region-decl
     /// ```
-    pub fn decl_body(&mut self) -> DeclBody {
-        match *self.peek() {
-            Token::Unit    => DeclBody::Unit      (self.unit_decl()),
+    pub fn decl_body(&mut self) -> Result<DeclBody> {
+        Ok(match *try!(self.peek()) {
+            Token::Unit    => DeclBody::Unit      (try!(self.unit_decl())),
             Token::Use      |
-            Token::In      => DeclBody::Use       (self.use_decl()),
-            Token::Type    => DeclBody::Type      (self.type_decl()),
-            Token::Fn      => DeclBody::Func      (self.func_decl()),
-            Token::Var     => DeclBody::GlobalVar (self.global_var_decl()),
-            Token::Const   => DeclBody::Const     (self.const_decl()),
-            Token::Region  => DeclBody::Region    (self.region_decl()),
-            _ => panic!("expected declaration body!")
-        }
+            Token::In      => DeclBody::Use       (try!(self.use_decl())),
+            Token::Type    => DeclBody::Type      (try!(self.type_decl())),
+            Token::Fn      => DeclBody::Func      (try!(self.func_decl())),
+            Token::Var     => DeclBody::GlobalVar (try!(self.global_var_decl())),
+            Token::Const   => DeclBody::Const     (try!(self.const_decl())),
+            Token::Region  => DeclBody::Region    (try!(self.region_decl())),
+            _ => return Err(self.error_here("expected declaration")),
+        })
     }
 
     /// ```plain
     /// unit-decl -> 'unit' id '{' decl-list '}'
     /// ```
-    pub fn unit_decl(&mut self) -> UnitDecl {
-        self.expect(Token::Unit);
-        let name = self.id();
-        self.expect(Token::LBrace);
-        let decls = self.decl_list();
-        self.expect(Token::RBrace);
+    pub fn unit_decl(&mut self) -> Result<UnitDecl> {
+        try!(self.expect(Token::Unit));
+        let name = try!(self.id());
+        try!(self.expect(Token::LBrace));
+        let decls = try!(self.decl_list());
+        try!(self.expect(Token::RBrace));
 
-        UnitDecl {
+        Ok(UnitDecl {
             name:          name,
             decls:         decls
-        }
+        })
     }
 
     /// ```plain
@@ -269,56 +296,58 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///           | 'in' path 'use' '*' ';'
     ///           | 'use' path 'as' id ';'
     /// ```
-    pub fn use_decl(&mut self) -> UseDecl {
-        match self.gettok().0 {
+    pub fn use_decl(&mut self) -> Result<UseDecl> {
+        let tok = try!(self.gettok());
+        match tok.0 {
             Token::Use => {
-                let p = self.path();
-                match self.gettok().0 {
+                let p = try!(self.path());
+                Ok(match try!(self.gettok()).0 {
                     Token::Semicolon =>
                         UseDecl::Single(p),
                     Token::As => {
-                        let x = self.id();
-                        self.expect(Token::Semicolon);
+                        let x = try!(self.id());
+                        try!(self.expect(Token::Semicolon));
                         UseDecl::Aliased(p, x)
                     },
-                    _ => panic!("expected ';' or 'as'")
-                }
+                    _ => return Err(self.error_here("expected ';' or 'as'")),
+                })
             },
 
             Token::In => {
-                let p = self.path();
-                self.expect(Token::Use);
-                let x = match *self.peek() {
+                let p = try!(self.path());
+                try!(self.expect(Token::Use));
+                let x = match *try!(self.peek()) {
                     Token::Identifier(_) =>
-                        UseDecl::Many(p, self.id_list()),
+                        UseDecl::Many(p, try!(self.id_list())),
                     Token::Star => {
-                        self.gettok();
+                        try!(self.gettok());
                         UseDecl::Glob(p)
                     }
-                    _ => panic!("expected identifier or '*'")
+                    _ => return Err(self.error_here("expected identifier or '*'"))
                 };
-                self.expect(Token::Semicolon);
-                x
+                try!(self.expect(Token::Semicolon));
+                Ok(x)
             },
 
-            _ => panic!("expected 'use' declaration")
+            _ => return Err(self.error(tok.1,
+                    format!("expected 'use' declaration")))
         }
     }
 
     /// ```plain
     /// type-decl -> 'type' id ':' type-spec ';'
     /// ```
-    pub fn type_decl(&mut self) -> TypeDecl {
-        self.expect(Token::Type);
-        let name = self.id();
-        self.expect(Token::Colon);
-        let typ = self.type_spec();
-        self.expect(Token::Semicolon);
+    pub fn type_decl(&mut self) -> Result<TypeDecl> {
+        try!(self.expect(Token::Type));
+        let name = try!(self.id());
+        try!(self.expect(Token::Colon));
+        let typ = try!(self.type_spec());
+        try!(self.expect(Token::Semicolon));
 
-        TypeDecl {
+        Ok(TypeDecl {
             name:          name,
             typ:           typ,
-        }
+        })
     }
 
     /// ```plain
@@ -329,35 +358,37 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///            | struct-spec
     ///            | bitvec-spec
     /// ```
-    pub fn type_spec(&mut self) -> TypeSpec {
-        let tok = self.gettok();
+    pub fn type_spec(&mut self) -> Result<TypeSpec> {
+        let tok = try!(self.gettok());
         match tok.0 {
             Token::Identifier(_) => {
                 self.untok(tok);
-                let p = self.path();
+                let p = try!(self.path());
 
-                match self.gettok() {
+                match try!(self.gettok()) {
                     LexerToken(Token::Less, _) => {
-                        let x = TypeSpec::Parameterized(p, self.constant_list());
-                        self.expect(Token::Greater);
-                        x
+                        let x = TypeSpec::Parameterized(p,
+                            try!(self.constant_list())
+                            );
+                        try!(self.expect(Token::Greater));
+                        Ok(x)
                     },
 
                     x => {
                         self.untok(x);
-                        TypeSpec::Alias(p)
+                        Ok(TypeSpec::Alias(p))
                     }
                 }
             },
 
             Token::Star => {
-                TypeSpec::Pointer(Box::new(self.type_spec()))
+                Ok(TypeSpec::Pointer(Box::new(try!(self.type_spec()))))
             },
 
             Token::LBrack => {
-                let x = self.number();
-                self.expect(Token::RBrack);
-                TypeSpec::Array(x, Box::new(self.type_spec()))
+                let x = try!(self.number());
+                try!(self.expect(Token::RBrack));
+                Ok(TypeSpec::Array(x, Box::new(try!(self.type_spec()))))
             },
 
             Token::Struct => {
@@ -370,7 +401,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
                 self.bitvec_spec()
             },
 
-            _ => panic!("expected type specifier"),
+            _ => Err(self.error(tok.1, format!("expected type specifier"))),
         }
     }
 
@@ -379,22 +410,22 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// struct-body -> var-decl struct-body
     ///              | ə
     /// ```
-    pub fn struct_spec(&mut self) -> TypeSpec {
-        self.expect(Token::Struct);
-        self.expect(Token::LBrace);
+    pub fn struct_spec(&mut self) -> Result<TypeSpec> {
+        try!(self.expect(Token::Struct));
+        try!(self.expect(Token::LBrace));
 
         let mut body = Vec::new();
 
         loop {
-            match self.var_decl_o() {
+            match try!(self.var_decl_o()) {
                 Some(x) => body.push(x),
                 None    => break,
             }
         }
 
-        self.expect(Token::RBrace);
+        try!(self.expect(Token::RBrace));
 
-        TypeSpec::Struct(body)
+        Ok(TypeSpec::Struct(body))
     }
 
     /// ```plain
@@ -403,109 +434,115 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// bitvec-body -> bitvec-member ',' bitvec-body
     ///              | bitvec-member
     /// ```
-    pub fn bitvec_spec(&mut self) -> TypeSpec {
-        self.expect(Token::Bitvec);
+    pub fn bitvec_spec(&mut self) -> Result<TypeSpec> {
+        try!(self.expect(Token::Bitvec));
 
-        let size = match *self.peek() {
+        let size = match *try!(self.peek()) {
             Token::Less => {
-                self.expect(Token::Less);
-                let n = self.number();
-                self.expect(Token::Greater);
+                try!(self.expect(Token::Less));
+                let n = try!(self.number());
+                try!(self.expect(Token::Greater));
                 Some(n)
             },
             _ => None,
         };
 
-        self.expect(Token::LParen);
+        try!(self.expect(Token::LParen));
 
         let mut body = Vec::new();
 
         loop {
-            body.push(self.bitvec_member());
+            body.push(try!(self.bitvec_member()));
 
-            match self.gettok() {
+            match try!(self.gettok()) {
                 LexerToken(Token::Comma, _) => { },
                 x => { self.untok(x); break },
             }
         }
 
-        self.expect(Token::RParen);
+        try!(self.expect(Token::RParen));
 
-        TypeSpec::Bitvec(size, body)
+        Ok(TypeSpec::Bitvec(size, body))
     }
 
     /// ```plain
     /// bitvec-member -> number ':' number
     ///                | id ':' number
     /// ```
-    pub fn bitvec_member(&mut self) -> BitvecMember {
-        match self.gettok().0 {
+    pub fn bitvec_member(&mut self) -> Result<BitvecMember> {
+        let tok = try!(self.gettok());
+        match tok.0 {
             Token::Identifier(x) => {
-                self.expect(Token::Colon);
-                BitvecMember::Variable(x, self.number())
+                try!(self.expect(Token::Colon));
+                Ok(BitvecMember::Variable(x, try!(self.number())))
             },
 
             Token::Number(x) => {
-                self.expect(Token::Colon);
-                BitvecMember::Literal(x, self.number())
+                try!(self.expect(Token::Colon));
+                Ok(BitvecMember::Literal(x, try!(self.number())))
             },
 
-            _ => panic!("expected bitvec member"),
+            _ => Err(self.error(tok.1, format!("expected bitvec member"))),
 
         }
     }
 
-    fn global_var_decl_o(&mut self) -> Option<GlobalVarDecl> {
-        match *self.peek() {
-            Token::Var  => Some(self.global_var_decl()),
+    fn global_var_decl_o(&mut self) -> Result<Option<GlobalVarDecl>> {
+        Ok(match *try!(self.peek()) {
+            Token::Var  => Some(try!(self.global_var_decl())),
             _           => None,
-        }
+        })
     }
 
     /// ```plain
     /// global-var-decl -> 'var' storage var-decl
     /// ```
-    pub fn global_var_decl(&mut self) -> GlobalVarDecl {
-        self.expect(Token::Var);
+    pub fn global_var_decl(&mut self) -> Result<GlobalVarDecl> {
+        try!(self.expect(Token::Var));
 
-        GlobalVarDecl {
-            storage:   self.storage(),
-            decl:      self.var_decl(),
-        }
+        let storage  = try!(self.storage());
+        let decl     = try!(self.var_decl());
+
+        Ok(GlobalVarDecl {
+            storage:   storage,
+            decl:      decl,
+        })
     }
 
     /// ```plain
     /// storage -> storage-loc storage-params
     /// ```
-    pub fn storage(&mut self) -> Storage {
-        Storage {
-            loc:       self.storage_loc(),
-            params:    self.storage_params(),
-        }
+    pub fn storage(&mut self) -> Result<Storage> {
+        let loc = try!(self.storage_loc());
+        let par = try!(self.storage_params());
+        Ok(Storage {
+            loc:       loc,
+            params:    par,
+        })
     }
 
     /// ```plain
     /// storage-loc -> ram | rom | ə
     /// ```
-    pub fn storage_loc(&mut self) -> StorageLoc {
-        match self.gettok() {
+    pub fn storage_loc(&mut self) -> Result<StorageLoc> {
+        Ok(match try!(self.gettok()) {
             LexerToken(Token::Ram, _) => StorageLoc::RAM,
             LexerToken(Token::Rom, _) => StorageLoc::ROM,
             x => { self.untok(x); StorageLoc::Default },
-        }
+        })
     }
 
     /// ```plain
     /// storage-params -> storage-param storage-params
     ///                 | ə
     /// ```
-    pub fn storage_params(&mut self) -> Vec<StorageParam> {
+    pub fn storage_params(&mut self) -> Result<Vec<StorageParam>> {
         let mut params = Vec::new();
 
         loop {
-            match self.storage_param_o() {
+            match try!(self.storage_param_o()) {
                 Some(x)  => params.push(x),
-                None     => return params
+                None     => return Ok(params)
             }
         }
     }
@@ -513,106 +550,109 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// ```plain
     /// storage-param -> region-name
     /// ```
-    fn storage_param_o(&mut self) -> Option<StorageParam> {
-        match *self.peek() {
-            Token::Region  => Some(StorageParam::Region(self.region_name())),
+    fn storage_param_o(&mut self) -> Result<Option<StorageParam>> {
+        Ok(match *try!(self.peek()) {
+            Token::Region  => Some(StorageParam::Region(
+                                    try!(self.region_name()))),
             _              => None,
-        }
+        })
     }
 
-    fn var_decl_o(&mut self) -> Option<VarDecl> {
-        match *self.peek() {
-            Token::Identifier(_)  => Some(self.var_decl()),
+    fn var_decl_o(&mut self) -> Result<Option<VarDecl>> {
+        Ok(match *try!(self.peek()) {
+            Token::Identifier(_)  => Some(try!(self.var_decl())),
             _                     => None
-        }
+        })
     }
 
     /// ```plain
     /// var-decl -> id-list ':' type-spec ';'
     ///           | id ':' type-spec '=' expr ';'
     /// ```
-    pub fn var_decl(&mut self) -> VarDecl {
-        let ids = self.id_list();
-        self.expect(Token::Colon);
-        let typ = self.type_spec();
-        let init = match self.gettok().0 {
+    pub fn var_decl(&mut self) -> Result<VarDecl> {
+        let ids = try!(self.id_list());
+        try!(self.expect(Token::Colon));
+        let typ = try!(self.type_spec());
+        let tok = try!(self.gettok());
+        let init = match tok.0 {
             Token::Semicolon => None,
             Token::Assign => {
-                let x = Some(self.expr());
-                self.expect(Token::Semicolon);
+                let x = Some(try!(self.expr()));
+                try!(self.expect(Token::Semicolon));
                 x
             },
-            x => panic!("expected = or ; got {:?}", x)
+            _ => return Err(self.error(tok.1,
+                    format!("expected = or ; got {:?}", tok.0)))
         };
 
-        VarDecl {
+        Ok(VarDecl {
             ids:       ids,
             typ:       typ,
             init:      init,
-        }
+        })
     }
 
     /// ```plain
     /// const-decl -> 'const' id ':' type-spec '=' constant ';'
     /// ```
-    pub fn const_decl(&mut self) -> ConstDecl {
-        self.expect(Token::Const);
-        let id = self.id();
-        self.expect(Token::Colon);
-        let typ = self.type_spec();
-        self.expect(Token::Assign);
-        let init = self.constant();
-        self.expect(Token::Semicolon);
+    pub fn const_decl(&mut self) -> Result<ConstDecl> {
+        try!(self.expect(Token::Const));
+        let id = try!(self.id());
+        try!(self.expect(Token::Colon));
+        let typ = try!(self.type_spec());
+        try!(self.expect(Token::Assign));
+        let init = try!(self.constant());
+        try!(self.expect(Token::Semicolon));
 
-        ConstDecl {
+        Ok(ConstDecl {
             id:        id,
             typ:       typ,
             init:      init
-        }
+        })
     }
 
     /// ```plain
     /// region-decl -> region-name '{' region-decl-body '}'
     /// ```
-    pub fn region_decl(&mut self) -> RegionDecl {
-        let name = self.region_name();
-        self.expect(Token::LBrace);
-        let vars = self.region_decl_body();
-        self.expect(Token::RBrace);
+    pub fn region_decl(&mut self) -> Result<RegionDecl> {
+        let name = try!(self.region_name());
+        try!(self.expect(Token::LBrace));
+        let vars = try!(self.region_decl_body());
+        try!(self.expect(Token::RBrace));
 
-        RegionDecl {
+        Ok(RegionDecl {
             name:      name,
             vars:      vars,
-        }
+        })
     }
 
     /// ```plain
     /// region-name -> 'region' '(' id ',' id ')'
     /// ```
-    pub fn region_name(&mut self) -> RegionName {
-        self.expect(Token::Region);
-        self.expect(Token::LParen);
-        let section = self.id();
-        self.expect(Token::Comma);
-        let layer = self.id();
-        self.expect(Token::RParen);
+    pub fn region_name(&mut self) -> Result<RegionName> {
+        try!(self.expect(Token::Region));
+        try!(self.expect(Token::LParen));
+        let section = try!(self.id());
+        try!(self.expect(Token::Comma));
+        let layer = try!(self.id());
+        try!(self.expect(Token::RParen));
 
-        RegionName {
+        Ok(RegionName {
             section:   section,
             layer:     layer
-        }
+        })
     }
 
     /// ```plain
     /// region-decl-body -> global-var-decl region-decl-body | ə
     /// ```
-    pub fn region_decl_body(&mut self) -> Vec<GlobalVarDecl> {
+    pub fn region_decl_body(&mut self) -> Result<Vec<GlobalVarDecl>> {
         let mut body = Vec::new();
 
         loop {
-            match self.global_var_decl_o() {
+            match try!(self.global_var_decl_o()) {
                 Some(x)  => body.push(x),
-                None     => return body,
+                None     => return Ok(body),
             }
         }
     }
@@ -621,33 +661,33 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// func-decl -> func-heading '{' func-body '}'
     /// func-heading -> 'fn' id '(' func-params ')' func-return
     /// ```
-    pub fn func_decl(&mut self) -> FuncDecl {
-        self.expect(Token::Fn);
-        let name = self.id();
-        self.expect(Token::LParen);
-        let params = self.func_params();
-        self.expect(Token::RParen);
-        let ret = self.func_return();
-        self.expect(Token::LBrace);
-        let body = self.stmt_list();
-        self.expect(Token::RBrace);
+    pub fn func_decl(&mut self) -> Result<FuncDecl> {
+        try!(self.expect(Token::Fn));
+        let name = try!(self.id());
+        try!(self.expect(Token::LParen));
+        let params = try!(self.func_params());
+        try!(self.expect(Token::RParen));
+        let ret = try!(self.func_return());
+        try!(self.expect(Token::LBrace));
+        let body = try!(self.stmt_list());
+        try!(self.expect(Token::RBrace));
 
-        FuncDecl {
+        Ok(FuncDecl {
             name:   name,
             params: params,
             ret:    ret,
             body:   body
-        }
+        })
     }
 
     /// ```plain
     /// func-return -> ':' type-spec | ə
     /// ```
-    pub fn func_return(&mut self) -> Option<TypeSpec> {
-        match self.gettok() {
-            LexerToken(Token::Colon, _) => Some(self.type_spec()),
+    pub fn func_return(&mut self) -> Result<Option<TypeSpec>> {
+        Ok(match try!(self.gettok()) {
+            LexerToken(Token::Colon, _) => Some(try!(self.type_spec())),
             x => { self.untok(x); None }
-        }
+        })
     }
 
     /// ```plain
@@ -655,95 +695,103 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// func-params' -> func-param ',' func-params'
     ///               | func-param
     /// ```
-    pub fn func_params(&mut self) -> Vec<FuncParam> {
+    pub fn func_params(&mut self) -> Result<Vec<FuncParam>> {
         let mut params = Vec::new();
 
         loop {
-            match self.func_param_o() {
+            match try!(self.func_param_o()) {
                 Some(x)  => params.push(x),
-                None     => return params
+                None     => return Ok(params)
             }
 
-            match self.gettok() {
+            match try!(self.gettok()) {
                 LexerToken(Token::Comma, _) => { },
-                x => { self.untok(x); return params; }
+                x => { self.untok(x); return Ok(params); }
             }
         }
     }
 
-    fn func_param_o(&mut self) -> Option<FuncParam> {
-        match *self.peek() {
-            Token::Identifier(_) => Some(self.func_param()),
+    fn func_param_o(&mut self) -> Result<Option<FuncParam>> {
+        Ok(match *try!(self.peek()) {
+            Token::Identifier(_) => Some(try!(self.func_param())),
             _                    => None,
-        }
+        })
     }
 
     /// ```plain
     /// func-param -> id-list ':' type-spec
     /// ```
-    pub fn func_param(&mut self) -> FuncParam {
-        let ids = self.id_list();
-        self.expect(Token::Colon);
+    pub fn func_param(&mut self) -> Result<FuncParam> {
+        let ids = try!(self.id_list());
+        try!(self.expect(Token::Colon));
 
-        FuncParam {
+        Ok(FuncParam {
             ids:       ids,
-            typ:       self.type_spec(),
-        }
+            typ:       try!(self.type_spec()),
+        })
     }
 
     /// ```plain
     /// stmt-list -> stmt stmt-list | ə
     /// ```
-    pub fn stmt_list(&mut self) -> Stmt {
+    pub fn stmt_list(&mut self) -> Result<Stmt> {
         let start = self.pos();
         let mut stmts = Vec::new();
 
         loop {
-            match self.stmt_o() {
+            match try!(self.stmt_o()) {
                 Some(x)  => stmts.push(x),
                 None =>
-                    return Stmt {
+                    return Ok(Stmt {
                         body: StmtBody::Compound(stmts),
                         span: Span {
                             start: start,
                             end:   self.pos()
                         }
-                    },
+                    }),
             }
         }
     }
 
-    fn stmt_o(&mut self) -> Option<Stmt> {
-        let tok = self.gettok();
+    fn stmt_o(&mut self) -> Result<Option<Stmt>> {
+        let tok = try!(self.gettok());
 
-        match tok.0 {
+        Ok(match tok.0 {
             Token::LBrace => {
-                let st = self.stmt_list();
-                self.expect(Token::RBrace);
+                let st = try!(self.stmt_list());
+                try!(self.expect(Token::RBrace));
                 Some(st)
             },
 
             Token::Var      =>
                 Some(Stmt {
-                    body: StmtBody::Var(self.var_decl()),
+                    body: StmtBody::Var(try!(self.var_decl())),
                     span: Span {
                         start: tok.1,
                         end:   self.pos()
                     }
                 }),
 
-            Token::If       => { self.untok(tok); Some(self.if_stmt()) },
-            Token::Switch   => { self.untok(tok); Some(self.switch_stmt()) },
-            Token::Loop     => { self.untok(tok); Some(self.loop_stmt()) },
-            Token::While    => { self.untok(tok); Some(self.while_stmt()) },
-            Token::For      => { self.untok(tok); Some(self.for_stmt()) },
+            Token::If       =>
+                { self.untok(tok); Some(try!(self.if_stmt())) },
+            Token::Switch   =>
+                { self.untok(tok); Some(try!(self.switch_stmt())) },
+            Token::Loop     =>
+                { self.untok(tok); Some(try!(self.loop_stmt())) },
+            Token::While    =>
+                { self.untok(tok); Some(try!(self.while_stmt())) },
+            Token::For      =>
+                { self.untok(tok); Some(try!(self.for_stmt())) },
 
-            Token::Break    => { self.stmt_simple_o(tok.1, StmtBody::Break) },
-            Token::Continue => { self.stmt_simple_o(tok.1, StmtBody::Continue) },
-            Token::Repeat   => { self.stmt_simple_o(tok.1, StmtBody::Repeat) },
+            Token::Break    =>
+                { try!(self.stmt_simple_o(tok.1, StmtBody::Break)) },
+            Token::Continue =>
+                { try!(self.stmt_simple_o(tok.1, StmtBody::Continue)) },
+            Token::Repeat   =>
+                { try!(self.stmt_simple_o(tok.1, StmtBody::Repeat)) },
 
             Token::Return => {
-                match self.gettok() {
+                match try!(self.gettok()) {
                     LexerToken(Token::Semicolon, end) =>
                         Some(Stmt {
                             body: StmtBody::Return(None),
@@ -754,8 +802,9 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
                         }),
                     x => {
                         self.untok(x);
-                        let ex = self.expr();
-                        self.stmt_simple_o(tok.1, StmtBody::Return(Some(ex)))
+                        let ex = try!(self.expr());
+                        let ret = StmtBody::Return(Some(ex));
+                        try!(self.stmt_simple_o(tok.1, ret))
                     }
                 }
             },
@@ -775,12 +824,12 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
             Token::LParen         => {
                 let start = tok.1;
                 self.untok(tok);
-                let ex = self.expr();
-                self.stmt_simple_o(start, StmtBody::Eval(ex))
+                let ex = try!(self.expr());
+                try!(self.stmt_simple_o(start, StmtBody::Eval(ex)))
             },
 
             _ => { self.untok(tok); None }
-        }
+        })
     }
 
     /// ```plain
@@ -798,41 +847,41 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///       | 'return' ';'
     ///       | 'return' expr ';'
     /// ```
-    pub fn stmt(&mut self) -> Stmt {
-        match self.stmt_o() {
-            Some(x)  => x,
-            None     => panic!("expected statement")
+    pub fn stmt(&mut self) -> Result<Stmt> {
+        match try!(self.stmt_o()) {
+            Some(x)  => Ok(x),
+            None     => Err(self.error_here("expected statement")),
         }
     }
 
-    fn stmt_simple_o(&mut self, p: Position, body: StmtBody) -> Option<Stmt> {
-        self.expect(Token::Semicolon);
-        Some(Stmt {
+    fn stmt_simple_o(&mut self, p: Position, body: StmtBody) -> Result<Option<Stmt>> {
+        try!(self.expect(Token::Semicolon));
+        Ok(Some(Stmt {
             body: body,
             span: Span {
                 start: p,
                 end:   self.pos()
             }
-        })
+        }))
     }
 
     /// ```plain
     /// if-stmt -> if '(' expr ')' stmt
     ///          | if '(' expr ')' stmt 'else' stmt
     /// ```
-    pub fn if_stmt(&mut self) -> Stmt {
+    pub fn if_stmt(&mut self) -> Result<Stmt> {
         let start = self.pos();
-        self.expect(Token::If);
-        self.expect(Token::LParen);
-        let cond = self.expr();
-        self.expect(Token::RParen);
-        let tb = Box::new(self.stmt());
-        let fb = match self.gettok() {
-            LexerToken(Token::Else, _) => Some(Box::new(self.stmt())),
+        try!(self.expect(Token::If));
+        try!(self.expect(Token::LParen));
+        let cond = try!(self.expr());
+        try!(self.expect(Token::RParen));
+        let tb = Box::new(try!(self.stmt()));
+        let fb = match try!(self.gettok()) {
+            LexerToken(Token::Else, _) => Some(Box::new(try!(self.stmt()))),
             x => { self.untok(x); None },
         };
 
-        Stmt {
+        Ok(Stmt {
             body: StmtBody::If(IfStmt {
                 cond: cond,
                 tb:   tb,
@@ -842,23 +891,23 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
                 start: start,
                 end:   self.pos()
             }
-        }
+        })
     }
 
     /// ```plain
     /// switch-stmt -> 'switch' '(' expr ')' '{' switch-body '}'
     /// ```
-    pub fn switch_stmt(&mut self) -> Stmt {
+    pub fn switch_stmt(&mut self) -> Result<Stmt> {
         let start = self.pos();
-        self.expect(Token::Switch);
-        self.expect(Token::LParen);
-        let ex = self.expr();
-        self.expect(Token::RParen);
-        self.expect(Token::LBrace);
-        let body = self.switch_body();
-        self.expect(Token::RBrace);
+        try!(self.expect(Token::Switch));
+        try!(self.expect(Token::LParen));
+        let ex = try!(self.expr());
+        try!(self.expect(Token::RParen));
+        try!(self.expect(Token::LBrace));
+        let body = try!(self.switch_body());
+        try!(self.expect(Token::RBrace));
 
-        Stmt {
+        Ok(Stmt {
             body: StmtBody::Switch(SwitchStmt {
                 ex:    ex,
                 cases: body,
@@ -867,123 +916,124 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
                 start: start,
                 end:   self.pos()
             }
-        }
+        })
     }
 
     /// ```plain
     /// switch-body -> switch-case switch-body | ə
     /// ```
-    pub fn switch_body(&mut self) -> Vec<SwitchCase> {
+    pub fn switch_body(&mut self) -> Result<Vec<SwitchCase>> {
         let mut body = Vec::new();
 
         loop {
-            match self.switch_case_o() {
+            match try!(self.switch_case_o()) {
                 Some(x)  => body.push(x),
-                None     => return body
+                None     => return Ok(body)
             }
         }
     }
 
-    fn switch_case_o(&mut self) -> Option<SwitchCase> {
-        match *self.peek() {
-            Token::Case | Token::Default => Some(self.switch_case()),
+    fn switch_case_o(&mut self) -> Result<Option<SwitchCase>> {
+        Ok(match *try!(self.peek()) {
+            Token::Case | Token::Default => Some(try!(self.switch_case())),
             _ => None,
-        }
+        })
     }
 
     /// ```plain
     /// switch-case -> 'case' const ':' stmt-list
     ///              | 'default' ':' stmt-list
     /// ```
-    pub fn switch_case(&mut self) -> SwitchCase {
-        match self.gettok().0 {
+    pub fn switch_case(&mut self) -> Result<SwitchCase> {
+        let tok = try!(self.gettok());
+        match tok.0 {
             Token::Case => {
-                let c = self.constant();
-                self.expect(Token::Colon);
-                SwitchCase::Case(c, self.stmt_list())
+                let c = try!(self.constant());
+                try!(self.expect(Token::Colon));
+                Ok(SwitchCase::Case(c, try!(self.stmt_list())))
             },
 
             Token::Default => {
-                self.expect(Token::Colon);
-                SwitchCase::Default(self.stmt_list())
+                try!(self.expect(Token::Colon));
+                Ok(SwitchCase::Default(try!(self.stmt_list())))
             },
 
-            _ => panic!("expected 'case' or 'default'"),
+            _ => Err(self.error(tok.1, format!("expected 'case' or 'default'")))
         }
     }
 
     /// ```plain
     /// loop-stmt -> 'loop' stmt
     /// ```
-    pub fn loop_stmt(&mut self) -> Stmt {
+    pub fn loop_stmt(&mut self) -> Result<Stmt> {
         let start = self.pos();
-        self.expect(Token::Loop);
+        try!(self.expect(Token::Loop));
 
         let body = StmtBody::Loop(LoopStmt {
-            body: Box::new(self.stmt())
+            body: Box::new(try!(self.stmt()))
         });
-        Stmt {
+        Ok(Stmt {
             body: body,
             span: Span {
                 start: start,
                 end:   self.pos()
             }
-        }
+        })
     }
 
     /// ```plain
     /// while-stmt -> 'while' '(' expr ')' stmt
     /// ```
-    pub fn while_stmt(&mut self) -> Stmt {
+    pub fn while_stmt(&mut self) -> Result<Stmt> {
         let start = self.pos();
-        self.expect(Token::While);
-        self.expect(Token::LParen);
-        let cond = self.expr();
-        self.expect(Token::RParen);
+        try!(self.expect(Token::While));
+        try!(self.expect(Token::LParen));
+        let cond = try!(self.expr());
+        try!(self.expect(Token::RParen));
 
         let body = StmtBody::While(WhileStmt {
             cond: cond,
-            body: Box::new(self.stmt()),
+            body: Box::new(try!(self.stmt())),
         });
-        Stmt {
+        Ok(Stmt {
             body: body,
             span: Span {
                 start: start,
                 end:   self.pos()
             }
-        }
+        })
     }
 
     /// ```plain
     /// for-stmt -> 'for' '(' id 'in' expr ')' stmt
     /// ```
-    pub fn for_stmt(&mut self) -> Stmt {
+    pub fn for_stmt(&mut self) -> Result<Stmt> {
         let start = self.pos();
-        self.expect(Token::For);
-        self.expect(Token::LParen);
-        let id = self.id();
-        self.expect(Token::In);
-        let iter = self.expr();
-        self.expect(Token::RParen);
+        try!(self.expect(Token::For));
+        try!(self.expect(Token::LParen));
+        let id = try!(self.id());
+        try!(self.expect(Token::In));
+        let iter = try!(self.expr());
+        try!(self.expect(Token::RParen));
 
         let body = StmtBody::For(ForStmt {
             id:   id,
             iter: iter,
-            body: Box::new(self.stmt()),
+            body: Box::new(try!(self.stmt())),
         });
-        Stmt {
+        Ok(Stmt {
             body: body,
             span: Span {
                 start: start,
                 end:   self.pos()
             }
-        }
+        })
     }
 
     /// ```plain
     /// expr -> ex-comma
     /// ```
-    pub fn expr(&mut self) -> Expr<Primary> {
+    pub fn expr(&mut self) -> Result<Expr<Primary>> {
         self.ex_comma()
     }
 
@@ -992,22 +1042,22 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// ex-list' -> ex-assign ',' ex-list'
     ///           | ex-assign
     /// ```
-    pub fn ex_list(&mut self) -> Vec<Expr<Primary>> {
+    pub fn ex_list(&mut self) -> Result<Vec<Expr<Primary>>> {
         let mut list = Vec::new();
 
         loop {
             // this is awful, it's everything that can follow an ex-list,
             // and it stops if it sees that
-            match *self.peek() {
-                Token::RParen => return list,
+            match *try!(self.peek()) {
+                Token::RParen => return Ok(list),
                 _ => { }
             }
 
-            list.push(self.ex_assign());
+            list.push(try!(self.ex_assign()));
 
-            match *self.peek() {
-                Token::Comma => { self.gettok(); },
-                _ => return list,
+            match *try!(self.peek()) {
+                Token::Comma => { try!(self.gettok()); },
+                _ => return Ok(list),
             }
         }
     }
@@ -1016,21 +1066,21 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// ex-comma -> ex-assign
     ///           | ex-assign , ex-comma
     /// ```
-    pub fn ex_comma(&mut self) -> Expr<Primary> {
-        let left = self.ex_assign();
+    pub fn ex_comma(&mut self) -> Result<Expr<Primary>> {
+        let left = try!(self.ex_assign());
 
-        match *self.peek() {
+        match *try!(self.peek()) {
             Token::Comma => { },
-            _ => { return left }
+            _ => { return Ok(left) }
         }
 
         let mut vec = Vec::new();
         vec.push(left);
 
         loop {
-            match self.gettok() {
-                LexerToken(Token::Comma, _) => vec.push(self.ex_assign()),
-                x => { self.untok(x); return Expr::Comma(vec) }
+            match try!(self.gettok()) {
+                LexerToken(Token::Comma, _) => vec.push(try!(self.ex_assign())),
+                x => { self.untok(x); return Ok(Expr::Comma(vec)) }
             }
         }
     }
@@ -1049,10 +1099,10 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///            | ex-tern '^=' ex-assign
     ///            | ex-tern '|=' ex-assign
     /// ```
-    pub fn ex_assign(&mut self) -> Expr<Primary> {
-        let left = self.ex_tern();
+    pub fn ex_assign(&mut self) -> Result<Expr<Primary>> {
+        let left = try!(self.ex_tern());
 
-        let op = match *self.peek() {
+        let op = match *try!(self.peek()) {
             Token::Assign    => None,
             Token::PlusEq    => Some(BinOp::Add),
             Token::MinusEq   => Some(BinOp::Sub),
@@ -1064,59 +1114,59 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
             Token::BitAndEq  => Some(BinOp::BitAnd),
             Token::BitXorEq  => Some(BinOp::BitXor),
             Token::BitOrEq   => Some(BinOp::BitOr),
-            _ => return left,
+            _ => return Ok(left),
         };
 
-        self.gettok();
+        try!(self.gettok());
 
-        Expr::Assign(
+        Ok(Expr::Assign(
             op,
             Box::new(left),
-            Box::new(self.ex_assign()),
-        )
+            Box::new(try!(self.ex_assign())),
+        ))
     }
 
     /// ```plain
     /// ex-tern -> ex-lor
     ///          | ex-lor '?' ex-lor ':' ex-tern
     /// ```
-    pub fn ex_tern(&mut self) -> Expr<Primary> {
-        let left = self.ex_lor();
+    pub fn ex_tern(&mut self) -> Result<Expr<Primary>> {
+        let left = try!(self.ex_lor());
 
-        match *self.peek() {
+        match *try!(self.peek()) {
             Token::Question => { },
-            _ => return left,
+            _ => return Ok(left),
         }
 
-        self.expect(Token::Question);
-        let mid = self.ex_lor();
-        self.expect(Token::Colon);
+        try!(self.expect(Token::Question));
+        let mid = try!(self.ex_lor());
+        try!(self.expect(Token::Colon));
 
-        Expr::Ternary(
+        Ok(Expr::Ternary(
             Box::new(left),
             Box::new(mid),
-            Box::new(self.ex_tern())
-        )
+            Box::new(try!(self.ex_tern()))
+        ))
     }
 
     /// ```plain
     /// ex-lor -> ex-land
     ///         | ex-lor '||' ex-land
     /// ```
-    pub fn ex_lor(&mut self) -> Expr<Primary> {
-        let mut left = self.ex_land();
+    pub fn ex_lor(&mut self) -> Result<Expr<Primary>> {
+        let mut left = try!(self.ex_land());
 
         loop {
-            let tok = self.gettok();
+            let tok = try!(self.gettok());
             match tok.0 {
                 Token::DblPipe =>
                     left = Expr::Binary(
                         BinOp::BoolOr,
                         Box::new(left),
-                        Box::new(self.ex_land())
+                        Box::new(try!(self.ex_land()))
                     ),
                 _ =>
-                    { self.untok(tok); return left }
+                    { self.untok(tok); return Ok(left) }
             }
         }
     }
@@ -1125,20 +1175,20 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// ex-land -> ex-bor
     ///          | ex-land '&&' ex-bor
     /// ```
-    pub fn ex_land(&mut self) -> Expr<Primary> {
-        let mut left = self.ex_bor();
+    pub fn ex_land(&mut self) -> Result<Expr<Primary>> {
+        let mut left = try!(self.ex_bor());
 
         loop {
-            let tok = self.gettok();
+            let tok = try!(self.gettok());
             match tok.0 {
                 Token::DblAmp =>
                     left = Expr::Binary(
                         BinOp::BoolAnd,
                         Box::new(left),
-                        Box::new(self.ex_bor())
+                        Box::new(try!(self.ex_bor()))
                     ),
                 _ =>
-                    { self.untok(tok); return left }
+                    { self.untok(tok); return Ok(left) }
             }
         }
     }
@@ -1147,20 +1197,20 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// ex-bor -> ex-bxor
     ///         | ex-bor '|' ex-bxor
     /// ```
-    pub fn ex_bor(&mut self) -> Expr<Primary> {
-        let mut left = self.ex_bxor();
+    pub fn ex_bor(&mut self) -> Result<Expr<Primary>> {
+        let mut left = try!(self.ex_bxor());
 
         loop {
-            let tok = self.gettok();
+            let tok = try!(self.gettok());
             match tok.0 {
                 Token::Pipe =>
                     left = Expr::Binary(
                         BinOp::BitOr,
                         Box::new(left),
-                        Box::new(self.ex_bxor())
+                        Box::new(try!(self.ex_bxor()))
                     ),
                 _ =>
-                    { self.untok(tok); return left }
+                    { self.untok(tok); return Ok(left) }
             }
         }
     }
@@ -1169,20 +1219,20 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// ex-bxor -> ex-band
     ///          | ex-bxor '^' ex-band
     /// ```
-    pub fn ex_bxor(&mut self) -> Expr<Primary> {
-        let mut left = self.ex_band();
+    pub fn ex_bxor(&mut self) -> Result<Expr<Primary>> {
+        let mut left = try!(self.ex_band());
 
         loop {
-            let tok = self.gettok();
+            let tok = try!(self.gettok());
             match tok.0 {
                 Token::Caret =>
                     left = Expr::Binary(
                         BinOp::BitXor,
                         Box::new(left),
-                        Box::new(self.ex_band())
+                        Box::new(try!(self.ex_band()))
                     ),
                 _ =>
-                    { self.untok(tok); return left }
+                    { self.untok(tok); return Ok(left) }
             }
         }
     }
@@ -1191,20 +1241,20 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     /// ex-band -> ex-eq
     ///          | ex-band '&' ex-eq
     /// ```
-    pub fn ex_band(&mut self) -> Expr<Primary> {
-        let mut left = self.ex_eq();
+    pub fn ex_band(&mut self) -> Result<Expr<Primary>> {
+        let mut left = try!(self.ex_eq());
 
         loop {
-            let tok = self.gettok();
+            let tok = try!(self.gettok());
             match tok.0 {
                 Token::Amp =>
                     left = Expr::Binary(
                         BinOp::BitAnd,
                         Box::new(left),
-                        Box::new(self.ex_eq())
+                        Box::new(try!(self.ex_eq()))
                     ),
                 _ =>
-                    { self.untok(tok); return left }
+                    { self.untok(tok); return Ok(left) }
             }
         }
     }
@@ -1214,27 +1264,27 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///        | ex-eq '==' ex-cmp
     ///        | ex-eq '!=' ex-cmp
     /// ```
-    pub fn ex_eq(&mut self) -> Expr<Primary> {
-        let mut left = self.ex_cmp();
+    pub fn ex_eq(&mut self) -> Result<Expr<Primary>> {
+        let mut left = try!(self.ex_cmp());
 
         loop {
-            let tok = self.gettok();
+            let tok = try!(self.gettok());
             match tok.0 {
                 Token::Eq =>
                     left = Expr::Binary(
                         BinOp::Eq,
                         Box::new(left),
-                        Box::new(self.ex_cmp())
+                        Box::new(try!(self.ex_cmp()))
                     ),
                 Token::NotEq =>
                     left = Expr::Binary(
                         BinOp::NotEq,
                         Box::new(left),
-                        Box::new(self.ex_cmp())
+                        Box::new(try!(self.ex_cmp()))
                     ),
 
                 _ =>
-                    { self.untok(tok); return left }
+                    { self.untok(tok); return Ok(left) }
             }
         }
     }
@@ -1246,39 +1296,39 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///         | ex-cmp '<=' ex-shift
     ///         | ex-cmp '>=' ex-shift
     /// ```
-    pub fn ex_cmp(&mut self) -> Expr<Primary> {
-        let mut left = self.ex_shift();
+    pub fn ex_cmp(&mut self) -> Result<Expr<Primary>> {
+        let mut left = try!(self.ex_shift());
 
         loop {
-            let tok = self.gettok();
+            let tok = try!(self.gettok());
             match tok.0 {
                 Token::Less =>
                     left = Expr::Binary(
                         BinOp::Less,
                         Box::new(left),
-                        Box::new(self.ex_shift())
+                        Box::new(try!(self.ex_shift()))
                     ),
                 Token::Greater =>
                     left = Expr::Binary(
                         BinOp::Greater,
                         Box::new(left),
-                        Box::new(self.ex_shift())
+                        Box::new(try!(self.ex_shift()))
                     ),
                 Token::LessEq =>
                     left = Expr::Binary(
                         BinOp::LessEq,
                         Box::new(left),
-                        Box::new(self.ex_shift())
+                        Box::new(try!(self.ex_shift()))
                     ),
                 Token::GreaterEq =>
                     left = Expr::Binary(
                         BinOp::GreaterEq,
                         Box::new(left),
-                        Box::new(self.ex_shift())
+                        Box::new(try!(self.ex_shift()))
                     ),
 
                 _ =>
-                    { self.untok(tok); return left }
+                    { self.untok(tok); return Ok(left) }
             }
         }
     }
@@ -1288,27 +1338,27 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///           | ex-shift '<<' ex-add
     ///           | ex-shift '>>' ex-add
     /// ```
-    pub fn ex_shift(&mut self) -> Expr<Primary> {
-        let mut left = self.ex_add();
+    pub fn ex_shift(&mut self) -> Result<Expr<Primary>> {
+        let mut left = try!(self.ex_add());
 
         loop {
-            let tok = self.gettok();
+            let tok = try!(self.gettok());
             match tok.0 {
                 Token::LShift =>
                     left = Expr::Binary(
                         BinOp::LShift,
                         Box::new(left),
-                        Box::new(self.ex_add())
+                        Box::new(try!(self.ex_add()))
                     ),
                 Token::RShift =>
                     left = Expr::Binary(
                         BinOp::RShift,
                         Box::new(left),
-                        Box::new(self.ex_add())
+                        Box::new(try!(self.ex_add()))
                     ),
 
                 _ =>
-                    { self.untok(tok); return left }
+                    { self.untok(tok); return Ok(left) }
             }
         }
     }
@@ -1318,27 +1368,27 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///         | ex-add '+' ex-mul
     ///         | ex-add '-' ex-mul
     /// ```
-    pub fn ex_add(&mut self) -> Expr<Primary> {
-        let mut left = self.ex_mul();
+    pub fn ex_add(&mut self) -> Result<Expr<Primary>> {
+        let mut left = try!(self.ex_mul());
 
         loop {
-            let tok = self.gettok();
+            let tok = try!(self.gettok());
             match tok.0 {
                 Token::Plus =>
                     left = Expr::Binary(
                         BinOp::Add,
                         Box::new(left),
-                        Box::new(self.ex_mul())
+                        Box::new(try!(self.ex_mul()))
                     ),
                 Token::Minus =>
                     left = Expr::Binary(
                         BinOp::Sub,
                         Box::new(left),
-                        Box::new(self.ex_mul())
+                        Box::new(try!(self.ex_mul()))
                     ),
 
                 _ =>
-                    { self.untok(tok); return left }
+                    { self.untok(tok); return Ok(left) }
             }
         }
     }
@@ -1349,33 +1399,33 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///         | ex-mul '/' ex-unary
     ///         | ex-mul '%' ex-unary
     /// ```
-    pub fn ex_mul(&mut self) -> Expr<Primary> {
-        let mut left = self.ex_unary();
+    pub fn ex_mul(&mut self) -> Result<Expr<Primary>> {
+        let mut left = try!(self.ex_unary());
 
         loop {
-            let tok = self.gettok();
+            let tok = try!(self.gettok());
             match tok.0 {
                 Token::Star =>
                     left = Expr::Binary(
                         BinOp::Mul,
                         Box::new(left),
-                        Box::new(self.ex_unary())
+                        Box::new(try!(self.ex_unary()))
                     ),
                 Token::Slash =>
                     left = Expr::Binary(
                         BinOp::Div,
                         Box::new(left),
-                        Box::new(self.ex_unary())
+                        Box::new(try!(self.ex_unary()))
                     ),
                 Token::Mod =>
                     left = Expr::Binary(
                         BinOp::Mod,
                         Box::new(left),
-                        Box::new(self.ex_unary())
+                        Box::new(try!(self.ex_unary()))
                     ),
 
                 _ =>
-                    { self.untok(tok); return left }
+                    { self.untok(tok); return Ok(left) }
             }
         }
     }
@@ -1390,24 +1440,24 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///           | 'sizeof' ex-unary
     ///           | ex-bottom
     /// ```
-    pub fn ex_unary(&mut self) -> Expr<Primary> {
-        let tok = self.gettok();
+    pub fn ex_unary(&mut self) -> Result<Expr<Primary>> {
+        let tok = try!(self.gettok());
 
         match tok.0 {
             Token::Incr =>
-                Expr::Unary(UnOp::PreIncr, Box::new(self.ex_unary())),
+                Ok(Expr::Unary(UnOp::PreIncr, Box::new(try!(self.ex_unary())))),
             Token::Decr =>
-                Expr::Unary(UnOp::PreDecr, Box::new(self.ex_unary())),
+                Ok(Expr::Unary(UnOp::PreDecr, Box::new(try!(self.ex_unary())))),
             Token::Excl =>
-                Expr::Unary(UnOp::BoolNot, Box::new(self.ex_unary())),
+                Ok(Expr::Unary(UnOp::BoolNot, Box::new(try!(self.ex_unary())))),
             Token::Tilde =>
-                Expr::Unary(UnOp::BitNot, Box::new(self.ex_unary())),
+                Ok(Expr::Unary(UnOp::BitNot, Box::new(try!(self.ex_unary())))),
             Token::Star =>
-                Expr::Unary(UnOp::Deref, Box::new(self.ex_unary())),
+                Ok(Expr::Unary(UnOp::Deref, Box::new(try!(self.ex_unary())))),
             Token::Amp =>
-                Expr::Unary(UnOp::AddrOf, Box::new(self.ex_unary())),
+                Ok(Expr::Unary(UnOp::AddrOf, Box::new(try!(self.ex_unary())))),
             Token::Sizeof =>
-                Expr::Unary(UnOp::SizeOf, Box::new(self.ex_unary())),
+                Ok(Expr::Unary(UnOp::SizeOf, Box::new(try!(self.ex_unary())))),
 
             _ =>
                 { self.untok(tok); self.ex_bottom() }
@@ -1421,34 +1471,34 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///            | ex-primary '(' ex-list ')'
     ///            | ex-primary '.' ex-bottom
     /// ```
-    pub fn ex_bottom(&mut self) -> Expr<Primary> {
-        let mut left = self.ex_primary();
+    pub fn ex_bottom(&mut self) -> Result<Expr<Primary>> {
+        let mut left = try!(self.ex_primary());
 
         loop {
-            let tok = self.gettok();
+            let tok = try!(self.gettok());
 
             match tok.0 {
                 Token::Incr =>
-                    return Expr::Unary(UnOp::PostIncr, Box::new(left)),
+                    return Ok(Expr::Unary(UnOp::PostIncr, Box::new(left))),
                 Token::Decr =>
-                    return Expr::Unary(UnOp::PostDecr, Box::new(left)),
+                    return Ok(Expr::Unary(UnOp::PostDecr, Box::new(left))),
                 Token::LParen => {
-                    left = Expr::Call(Box::new(left), self.ex_list());
-                    self.expect(Token::RParen);
+                    left = Expr::Call(Box::new(left), try!(self.ex_list()));
+                    try!(self.expect(Token::RParen));
                 },
                 Token::LBrack => {
                     left = Expr::Binary(
                         BinOp::Element,
                         Box::new(left),
-                        Box::new(self.expr())
+                        Box::new(try!(self.expr()))
                     );
-                    self.expect(Token::RBrack);
+                    try!(self.expect(Token::RBrack));
                 },
                 Token::Dot =>
-                    left = Expr::Member(Box::new(left), self.id()),
+                    left = Expr::Member(Box::new(left), try!(self.id())),
 
                 _ =>
-                    { self.untok(tok); return left }
+                    { self.untok(tok); return Ok(left) }
             }
         }
     }
@@ -1458,25 +1508,25 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Parser<It> {
     ///            -> constant
     ///            -> '(' expr ')'
     /// ```
-    pub fn ex_primary(&mut self) -> Expr<Primary> {
-        let tok = self.gettok();
+    pub fn ex_primary(&mut self) -> Result<Expr<Primary>> {
+        let tok = try!(self.gettok());
 
         match tok.0 {
             Token::Identifier(_) => {
                 self.untok(tok);
-                Expr::Primary(Primary::Path(self.path()))
+                Ok(Expr::Primary(Primary::Path(try!(self.path()))))
             }
             Token::Number(x) =>
-                Expr::Primary(Primary::Number(x as isize)),
+                Ok(Expr::Primary(Primary::Number(x as isize))),
             Token::Character(x) =>
-                Expr::Primary(Primary::Number(x as isize)),
+                Ok(Expr::Primary(Primary::Number(x as isize))),
             Token::LParen => {
-                let ex = self.expr();
-                self.expect(Token::RParen);
-                ex
+                let ex = try!(self.expr());
+                try!(self.expect(Token::RParen));
+                Ok(ex)
             }
 
-            _ => { panic!("expected expression") }
+            _ => Err(self.error(tok.1, format!("expected expression")))
         }
     }
 }

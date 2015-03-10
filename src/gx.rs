@@ -36,7 +36,10 @@ mod driver {
     use frontend::lexer;
     use frontend::parser;
 
+    use msg;
+
     pub enum Error {
+        Message    (msg::Message),
         IO         (String, io::Error), // (Path, Error)
         GetOpts    (getopts::Fail),
     }
@@ -47,6 +50,7 @@ mod driver {
             match *self {
                 IO(ref p, ref e) => write!(f, "Could not read file `{}`: {}", p, e),
                 GetOpts(ref e) => write!(f, "Invalid invocation of gx: {}", e),
+                Message(ref m) => write!(f, "Compile error: {}", m),
             }
         }
     }
@@ -57,8 +61,9 @@ mod driver {
         }
     }
 
-    fn parse(ch: io::Chars<io::BufReader<fs::File>>) -> Input {
-        parser::Parser::new(lexer::Lexer::new(ch)).file()
+    fn parse(ch: io::Chars<io::BufReader<fs::File>>) -> parser::Result<Input> {
+        let nm = String::from_str("<input>");
+        parser::Parser::new(lexer::Lexer::new(nm, ch)).file()
     }
 
     fn dump(input: &Input) {
@@ -90,7 +95,10 @@ mod driver {
         let mut inputs = Vec::new();
         for file in files {
             use std::io::ReadExt;
-            let mut p = parse(io::BufReader::new(file).chars());
+            let mut p = match parse(io::BufReader::new(file).chars()) {
+                Ok(p) => p,
+                Err(m) => return Err(Error::Message(m))
+            };
             inputs.append(&mut p);
         }
 

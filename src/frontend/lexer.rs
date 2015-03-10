@@ -51,6 +51,7 @@ fn byte_from_hex_pair(hi: char, lo: char) -> Result<u8, ()> {
 /// read back in the opposite order they are ungot.
 
 pub struct Lexer<It> {
+    pub file: String,
     input: It,
     ungot: Vec<char>,
     line_number: usize,
@@ -74,8 +75,9 @@ enum LexerStep {
 }
 
 impl<It: Iterator<Item = Result<char, io::CharsError>>> Lexer<It> {
-    pub fn new(input: It) -> Lexer<It> {
+    pub fn new(file: String, input: It) -> Lexer<It> {
         Lexer {
+            file: file,
             input: input,
             ungot: Vec::with_capacity(5),
             line_number: 1,
