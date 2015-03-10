@@ -11,9 +11,8 @@
 #![feature(collections)]
 #![feature(core)] // required for FromStrRadix in frontend::lexer::read_int()
 #![feature(io)]
-#![feature(fs)]
 #![feature(unicode)]
-#![feature(env)] // required for std::env::args()
+#![feature(exit_status)] // for std::env::set_exit_status
 
 //! This crate and all its modules are the components of the reference
 //! implementation of the `gx` language. A small driver program is provided
