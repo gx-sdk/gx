@@ -54,7 +54,7 @@ impl fmt::Debug for EA {
             AbsShort(x)        => f.write_fmt(format_args!("({}).w", x)),
             AbsLong(x)         => f.write_fmt(format_args!("({}).l", x)),
             Imm(x)             => f.write_fmt(format_args!("#{}", x)),
-            List(x)            => f.write_str("<list>"),
+            List(_)            => f.write_str("<list>"),
             SpecialCCR         => f.write_str("ccr"),
             SpecialSR          => f.write_str("sr"),
         }
