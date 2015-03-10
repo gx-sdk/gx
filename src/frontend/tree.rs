@@ -81,12 +81,11 @@ pub struct Storage {
     pub loc:       StorageLoc,
     pub params:    Vec<StorageParam>,
 }
+#[derive(Copy)]
 pub enum StorageLoc {
     Default,
     RAM,
     ROM,
-}
-impl Copy for StorageLoc {
 }
 pub enum StorageParam {
     Region         (RegionName),
@@ -202,11 +201,10 @@ pub enum Primary {
     Number         (Number),
 }
 
+#[derive(Copy)]
 pub struct DumpContext {
     pub blank: bool,
     pub depth: isize,
-}
-impl Copy for DumpContext {
 }
 
 pub trait Dumpable {
