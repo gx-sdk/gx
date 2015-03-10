@@ -15,3 +15,33 @@
 //! The various submodules correspond to the different portions of the
 //! semantic graphs, however there is significant interdependence between
 //! them.
+
+use std::cell::RefCell;
+use std::fmt;
+
+pub struct Path {
+    pub components: Vec<String>
+}
+
+impl fmt::Debug for Path {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.components.len() == 0 {
+            write!(f, "(empty)")
+        } else {
+            try!(write!(f, "{}", self.components[0]));
+            for x in self.components[1..].iter() {
+                try!(write!(f, "::{}", x))
+            }
+            Ok(())
+        }
+    }
+}
+
+pub enum RefBody<T> {
+    Named  (Path),
+    Res    (T),
+}
+
+pub type Ref<T> = RefCell<RefBody<T>>;
+
+pub mod types;
