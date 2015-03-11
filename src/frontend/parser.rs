@@ -360,6 +360,7 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
     /// ```
     pub fn type_spec(&mut self) -> Result<TypeSpec> {
         let tok = try!(self.gettok());
+        let start = tok.1;
         match tok.0 {
             Token::Identifier(_) => {
                 self.untok(tok);
@@ -367,28 +368,54 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
 
                 match try!(self.gettok()) {
                     LexerToken(Token::Less, _) => {
-                        let x = TypeSpec::Parameterized(p,
+                        let x = TypeBody::Parameterized(p,
                             try!(self.constant_list())
                             );
                         try!(self.expect(Token::Greater));
-                        Ok(x)
+                        Ok(TypeSpec {
+                            body: x,
+                            span: Span {
+                                start:  start,
+                                end:    self.pos()
+                            }
+                        })
                     },
 
                     x => {
                         self.untok(x);
-                        Ok(TypeSpec::Alias(p))
+                        Ok(TypeSpec {
+                            body: TypeBody::Alias(p),
+                            span: Span {
+                                start:  start,
+                                end:    self.pos()
+                            }
+                        })
                     }
                 }
             },
 
             Token::Star => {
-                Ok(TypeSpec::Pointer(Box::new(try!(self.type_spec()))))
+                let body = TypeBody::Pointer(Box::new(try!(self.type_spec())));
+                Ok(TypeSpec {
+                    body: body,
+                    span: Span {
+                        start:  start,
+                        end:    self.pos()
+                    }
+                })
             },
 
             Token::LBrack => {
                 let x = try!(self.number());
                 try!(self.expect(Token::RBrack));
-                Ok(TypeSpec::Array(x, Box::new(try!(self.type_spec()))))
+                let body = TypeBody::Array(x, Box::new(try!(self.type_spec())));
+                Ok(TypeSpec {
+                    body: body,
+                    span: Span {
+                        start:  start,
+                        end:    self.pos()
+                    }
+                })
             },
 
             Token::Struct => {
@@ -411,6 +438,8 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
     ///              | ə
     /// ```
     pub fn struct_spec(&mut self) -> Result<TypeSpec> {
+        let start = self.pos();
+
         try!(self.expect(Token::Struct));
         try!(self.expect(Token::LBrace));
 
@@ -425,7 +454,13 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
 
         try!(self.expect(Token::RBrace));
 
-        Ok(TypeSpec::Struct(body))
+        Ok(TypeSpec {
+            body: TypeBody::Struct(body),
+            span: Span {
+                start:  start,
+                end:    self.pos()
+            }
+        })
     }
 
     /// ```plain
@@ -435,6 +470,8 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
     ///              | bitvec-member
     /// ```
     pub fn bitvec_spec(&mut self) -> Result<TypeSpec> {
+        let start = self.pos();
+
         try!(self.expect(Token::Bitvec));
 
         let size = match *try!(self.peek()) {
@@ -462,7 +499,13 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
 
         try!(self.expect(Token::RParen));
 
-        Ok(TypeSpec::Bitvec(size, body))
+        Ok(TypeSpec {
+            body: TypeBody::Bitvec(size, body),
+            span: Span {
+                start:  start,
+                end:    self.pos()
+            }
+        })
     }
 
     /// ```plain

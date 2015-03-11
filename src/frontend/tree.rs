@@ -59,7 +59,11 @@ pub struct TypeDecl {
 }
 
 /// Type specifier
-pub enum TypeSpec {
+pub struct TypeSpec {
+    pub body:      TypeBody,
+    pub span:      Span,
+}
+pub enum TypeBody {
     Alias          (Path),
     Parameterized  (Path, Vec<Expr<Primary>>),
     Pointer        (Box<TypeSpec>),
@@ -375,40 +379,49 @@ impl Dumpable for TypeDecl {
 
 impl Dumpable for TypeSpec {
     fn dump(&self, d: &mut DumpContext) {
+        d.push_str("TypeSpec");
+        self.body.dump(d);
+        self.span.dump(d);
+        d.pop();
+    }
+}
+
+impl Dumpable for TypeBody {
+    fn dump(&self, d: &mut DumpContext) {
         match *self {
-            TypeSpec::Alias(ref x) => {
-                d.push_str("TypeSpec::Alias");
+            TypeBody::Alias(ref x) => {
+                d.push_str("TypeBody::Alias");
                 x.dump(d);
                 d.pop();
             },
-            TypeSpec::Parameterized(ref x, ref y) => {
-                d.push_str("TypeSpec::Parameterized");
+            TypeBody::Parameterized(ref x, ref y) => {
+                d.push_str("TypeBody::Parameterized");
                 x.dump(d);
                 for t in y.iter() {
                     t.dump(d);
                 }
                 d.pop();
             },
-            TypeSpec::Pointer(ref x) => {
-                d.push_str("TypeSpec::Pointer");
+            TypeBody::Pointer(ref x) => {
+                d.push_str("TypeBody::Pointer");
                 x.dump(d);
                 d.pop();
             },
-            TypeSpec::Array(n, ref t) => {
-                d.push_str("TypeSpec::Array");
+            TypeBody::Array(n, ref t) => {
+                d.push_str("TypeBody::Array");
                 d.put_ln(format!("size: {}", n));
                 t.dump(d);
                 d.pop();
             },
-            TypeSpec::Struct(ref x) => {
-                d.push_str("TypeSpec::Struct");
+            TypeBody::Struct(ref x) => {
+                d.push_str("TypeBody::Struct");
                 for t in x.iter() {
                     t.dump(d);
                 }
                 d.pop();
             },
-            TypeSpec::Bitvec(ref x, ref y) => {
-                d.push_str("TypeSpec::Bitvec");
+            TypeBody::Bitvec(ref x, ref y) => {
+                d.push_str("TypeBody::Bitvec");
                 match *x {
                     Some(n)  => d.put_ln(format!("size: {}", n)),
                     None     => d.put_ln_str("size: auto"),

@@ -36,8 +36,8 @@ impl<'a> TypeRef<'a> {
     /// Converts the parse tree type specifier to a semantic tree type
     /// reference.
     pub fn from_tree(t: &tree::TypeSpec) -> SemResult<TypeRef<'a>> {
-        match *t {
-            tree::TypeSpec::Alias(ref nm) => {
+        match t.body {
+            tree::TypeBody::Alias(ref nm) => {
                 Ok(if nm.0.len() == 1 {
                     match nm.0[0].as_slice() {
                         "u8"   => TypeRef::new(Type::U8),
@@ -52,7 +52,7 @@ impl<'a> TypeRef<'a> {
                     TypeRef::unresolved(Path::from_tree(nm))
                 })
             },
-            tree::TypeSpec::Parameterized(ref nm, ref ps) => {
+            tree::TypeBody::Parameterized(ref nm, ref ps) => {
                 if nm.0.len() != 1 {
                     return Err(msg::Message {
                         kind:   msg::MessageKind::Error,
@@ -119,9 +119,9 @@ impl<'a> TypeRef<'a> {
                     })
                 }
             },
-            tree::TypeSpec::Pointer(ref to) =>
+            tree::TypeBody::Pointer(ref to) =>
                 Ok(TypeRef::new(Type::Pointer(try!(TypeRef::from_tree(to))))),
-            tree::TypeSpec::Array(n, ref of) =>
+            tree::TypeBody::Array(n, ref of) =>
                 Ok(TypeRef::new(Type::Array(n, try!(TypeRef::from_tree(of))))),
             _ => Ok(TypeRef::unresolved(Path { components: Vec::new() })),
         }
