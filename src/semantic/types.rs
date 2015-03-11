@@ -12,6 +12,7 @@ use std::fmt;
 
 use msg;
 use semantic::*;
+use expr::Expr;
 use frontend::tree;
 
 /// A reference to a type node. References are either a `semantic::Path`, or
@@ -34,10 +35,10 @@ impl<'a> TypeRef<'a> {
 
     /// Converts the parse tree type specifier to a semantic tree type
     /// reference.
-    pub fn from_tree(t: &tree::TypeSpec) -> TypeRef<'a> {
+    pub fn from_tree(t: &tree::TypeSpec) -> SemResult<TypeRef<'a>> {
         match *t {
             tree::TypeSpec::Alias(ref nm) => {
-                if nm.0.len() == 1 {
+                Ok(if nm.0.len() == 1 {
                     match nm.0[0].as_slice() {
                         "u8"   => TypeRef::new(Type::U8),
                         "u16"  => TypeRef::new(Type::U16),
@@ -49,13 +50,80 @@ impl<'a> TypeRef<'a> {
                     }
                 } else {
                     TypeRef::unresolved(Path::from_tree(nm))
+                })
+            },
+            tree::TypeSpec::Parameterized(ref nm, ref ps) => {
+                if nm.0.len() != 1 {
+                    return Err(msg::Message {
+                        kind:   msg::MessageKind::Error,
+                        msg:    format!("invalid parameterized type"),
+                        start:  None,
+                        end:    None
+                    })
+                }
+                match nm.0[0].as_slice() {
+                    "bcd" => {
+                        if ps.len() != 1 {
+                            return Err(msg::Message {
+                                kind:   msg::MessageKind::Error,
+                                msg:    format!("bcd<> expects 1 parameter, \
+                                                 found {}", ps.len()),
+                                start:  None,
+                                end:    None
+                            })
+                        }
+                        if let Expr::Primary(tree::Primary::Number(n)) = ps[0] {
+                            Ok(TypeRef::new(Type::BCD(n as usize)))
+                        } else {
+                            Err(msg::Message {
+                                kind:   msg::MessageKind::Error,
+                                msg:    format!("bcd<> expects numeric \
+                                                 type parameter"),
+                                start:  None,
+                                end:    None
+                            })
+                        }
+                    },
+                    "fixed" => {
+                        if ps.len() != 2 {
+                            return Err(msg::Message {
+                                kind:   msg::MessageKind::Error,
+                                msg:    format!("fixed<> expects 2 parameters, \
+                                                 found {}", ps.len()),
+                                start:  None,
+                                end:    None
+                            })
+                        }
+                        if let (&Expr::Primary(tree::Primary::Number(n1)),
+                                &Expr::Primary(tree::Primary::Number(n2)))
+                            = (&ps[0], &ps[1]) {
+                            Ok(TypeRef::new(Type::Fixed(
+                                n1 as usize,
+                                n2 as usize
+                            )))
+                        } else {
+                            Err(msg::Message {
+                                kind:   msg::MessageKind::Error,
+                                msg:    format!("fixed<> expects numeric \
+                                                 type parameter"),
+                                start:  None,
+                                end:    None
+                            })
+                        }
+                    },
+                    x => Err(msg::Message {
+                        kind:   msg::MessageKind::Error,
+                        msg:    format!("invalid parameterized type `{}'", x),
+                        start:  None,
+                        end:    None
+                    })
                 }
             },
             tree::TypeSpec::Pointer(ref to) =>
-                TypeRef::new(Type::Pointer(TypeRef::from_tree(to))),
+                Ok(TypeRef::new(Type::Pointer(try!(TypeRef::from_tree(to))))),
             tree::TypeSpec::Array(n, ref of) =>
-                TypeRef::new(Type::Array(n, TypeRef::from_tree(of))),
-            _ => TypeRef::unresolved(Path { components: Vec::new() }),
+                Ok(TypeRef::new(Type::Array(n, try!(TypeRef::from_tree(of))))),
+            _ => Ok(TypeRef::unresolved(Path { components: Vec::new() })),
         }
     }
 }

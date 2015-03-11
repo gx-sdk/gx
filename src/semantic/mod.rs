@@ -19,7 +19,10 @@
 use std::cell::RefCell;
 use std::fmt;
 
+use msg;
 use frontend::tree;
+
+pub type SemResult<T> = Result<T, msg::Message>;
 
 pub struct Path {
     pub components: Vec<String>
