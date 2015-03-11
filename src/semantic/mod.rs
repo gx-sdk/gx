@@ -34,6 +34,12 @@ impl Path {
     }
 }
 
+impl Clone for Path {
+    fn clone(&self) -> Path {
+        Path { components: self.components.clone() }
+    }
+}
+
 impl fmt::Debug for Path {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.components.len() == 0 {

@@ -22,6 +22,17 @@ pub struct TypeRef<'a> {
     cell: Ref<Rc<Type<'a>>>
 }
 
+impl<'a> Clone for TypeRef<'a> {
+    fn clone(&self) -> TypeRef<'a> {
+        match *self.cell.borrow() {
+            RefBody::Res(ref rc) =>
+                TypeRef { cell: RefCell::new(RefBody::Res(rc.clone())) },
+            RefBody::Named(ref p) =>
+                TypeRef { cell: RefCell::new(RefBody::Named(p.clone())) },
+        }
+    }
+}
+
 impl<'a> TypeRef<'a> {
     /// Constructs a new `TypeRef` object from a vanilla Rust reference.
     pub fn new(t: Type<'a>) -> TypeRef<'a> {
@@ -69,6 +80,7 @@ impl<'a> TypeRef<'a> {
                     TypeRef::unresolved(Path::from_tree(nm))
                 })
             },
+
             tree::TypeBody::Parameterized(ref nm, ref ps) => {
                 if nm.0.len() != 1 {
                     return Err(TypeRef::error(
@@ -76,6 +88,7 @@ impl<'a> TypeRef<'a> {
                         t.span
                     ));
                 }
+
                 match nm.0[0].as_slice() {
                     "bcd" => {
                         if ps.len() != 1 {
@@ -95,6 +108,7 @@ impl<'a> TypeRef<'a> {
                             ))
                         }
                     },
+
                     "fixed" => {
                         if ps.len() != 2 {
                             return Err(TypeRef::error(
@@ -124,11 +138,86 @@ impl<'a> TypeRef<'a> {
                     ))
                 }
             },
+
             tree::TypeBody::Pointer(ref to) =>
                 Ok(TypeRef::new(Type::Pointer(try!(TypeRef::from_tree(to))))),
+
             tree::TypeBody::Array(n, ref of) =>
                 Ok(TypeRef::new(Type::Array(n, try!(TypeRef::from_tree(of))))),
-            _ => Ok(TypeRef::unresolved(Path { components: Vec::new() })),
+
+            tree::TypeBody::Struct(ref ms) => {
+                let mut v = Vec::new();
+
+                for m in ms.iter() {
+                    if let Some(_) = m.init {
+                        return Err(TypeRef::error(
+                            format!("initializers are not valid in struct defs"),
+                            m.typ.span
+                        ));
+                    }
+
+                    let tr = try!(TypeRef::from_tree(&m.typ));
+
+                    for id in m.ids.iter() {
+                        v.push(StructMember {
+                            name:  id.clone(),
+                            typ:   tr.clone()
+                        });
+                    }
+                }
+
+                Ok(TypeRef::new(Type::Struct(v)))
+            },
+
+            tree::TypeBody::Bitvec(num, ref ms) => {
+                let mut v = Vec::new();
+                let mut width: usize = 0;
+
+                for m in ms.iter() {
+                    v.push(match *m {
+                        tree::BitvecMember::Literal(n, w) => {
+                            if w <= 0 {
+                                return Err(TypeRef::error(
+                                    format!("bitvec members must have \
+                                             positive width"),
+                                    t.span
+                                ))
+                            }
+                            // TODO: check literal has correct width
+                            width += w as usize;
+                            BitvecMember::Literal(w as usize, n)
+                        },
+                        tree::BitvecMember::Variable(ref id, w) => {
+                            if w <= 0 {
+                                return Err(TypeRef::error(
+                                    format!("bitvec members must have \
+                                             positive width"),
+                                    t.span
+                                ))
+                            }
+                            width += w as usize;
+                            BitvecMember::Variable(w as usize, id.clone())
+                        },
+                    })
+                }
+
+                width = match num {
+                    None => {
+                        width
+                    },
+                    Some(n) => if n <= 0 || (width as isize) > n {
+                        return Err(TypeRef::error(
+                            format!("bitvec specified width too small \
+                                     for sum of members"),
+                            t.span
+                        ))
+                    } else {
+                        n as usize
+                    },
+                };
+
+                Ok(TypeRef::new(Type::Bitvec(width, v)))
+            },
         }
     }
 }
@@ -196,11 +285,12 @@ impl<'a> fmt::Debug for Type<'a> {
                 for m in ms.iter() {
                     match *m {
                         BitvecMember::Literal(n, x) =>
-                            try!(write!(f, "{}:{}", n, x)),
+                            try!(write!(f, "{}:{},", n, x)),
                         BitvecMember::Variable(n, ref x) =>
-                            try!(write!(f, "{}:{}", n, x)),
+                            try!(write!(f, "{}:{},", n, x)),
                     }
                 }
+                try!(write!(f, ")"));
                 Ok(())
             }
 
@@ -209,7 +299,7 @@ impl<'a> fmt::Debug for Type<'a> {
             Type::Struct(ref ms) => {
                 try!(write!(f, "struct {{ "));
                 for m in ms.iter() {
-                    try!(write!(f, "{}:{:?}", m.name, m.typ));
+                    try!(write!(f, "{}:{:?} ", m.name, m.typ));
                 }
                 try!(write!(f, "}}"));
                 Ok(())
