@@ -33,6 +33,23 @@ impl<'a> TypeRef<'a> {
         TypeRef { cell: RefCell::new(RefBody::Named(p)) }
     }
 
+    fn error(msg: String, s: tree::Span) -> msg::Message {
+        msg::Message {
+            kind: msg::MessageKind::Error,
+            msg: msg,
+            start: Some(msg::Position {
+                file:  String::from_str("<input>"), // TODO
+                line:  s.start.line,
+                col:   s.start.col
+            }),
+            end: Some(msg::Position {
+                file:  String::from_str("<input>"), // TODO
+                line:  s.end.line,
+                col:   s.end.col
+            }),
+        }
+    }
+
     /// Converts the parse tree type specifier to a semantic tree type
     /// reference.
     pub fn from_tree(t: &tree::TypeSpec) -> SemResult<TypeRef<'a>> {
@@ -54,45 +71,37 @@ impl<'a> TypeRef<'a> {
             },
             tree::TypeBody::Parameterized(ref nm, ref ps) => {
                 if nm.0.len() != 1 {
-                    return Err(msg::Message {
-                        kind:   msg::MessageKind::Error,
-                        msg:    format!("invalid parameterized type"),
-                        start:  None,
-                        end:    None
-                    })
+                    return Err(TypeRef::error(
+                        format!("invalid parameterized type"),
+                        t.span
+                    ));
                 }
                 match nm.0[0].as_slice() {
                     "bcd" => {
                         if ps.len() != 1 {
-                            return Err(msg::Message {
-                                kind:   msg::MessageKind::Error,
-                                msg:    format!("bcd<> expects 1 parameter, \
-                                                 found {}", ps.len()),
-                                start:  None,
-                                end:    None
-                            })
+                            return Err(TypeRef::error(
+                                format!("bcd<> expects 1 parameter, \
+                                         found {}", ps.len()),
+                                t.span
+                            ));
                         }
                         if let Expr::Primary(tree::Primary::Number(n)) = ps[0] {
                             Ok(TypeRef::new(Type::BCD(n as usize)))
                         } else {
-                            Err(msg::Message {
-                                kind:   msg::MessageKind::Error,
-                                msg:    format!("bcd<> expects numeric \
-                                                 type parameter"),
-                                start:  None,
-                                end:    None
-                            })
+                            Err(TypeRef::error(
+                                format!("bcd<> expects numeric \
+                                         type parameter"),
+                                t.span
+                            ))
                         }
                     },
                     "fixed" => {
                         if ps.len() != 2 {
-                            return Err(msg::Message {
-                                kind:   msg::MessageKind::Error,
-                                msg:    format!("fixed<> expects 2 parameters, \
-                                                 found {}", ps.len()),
-                                start:  None,
-                                end:    None
-                            })
+                            return Err(TypeRef::error(
+                                format!("fixed<> expects 2 parameters, \
+                                         found {}", ps.len()),
+                                t.span
+                            ));
                         }
                         if let (&Expr::Primary(tree::Primary::Number(n1)),
                                 &Expr::Primary(tree::Primary::Number(n2)))
@@ -102,21 +111,17 @@ impl<'a> TypeRef<'a> {
                                 n2 as usize
                             )))
                         } else {
-                            Err(msg::Message {
-                                kind:   msg::MessageKind::Error,
-                                msg:    format!("fixed<> expects numeric \
-                                                 type parameter"),
-                                start:  None,
-                                end:    None
-                            })
+                            Err(TypeRef::error(
+                                format!("fixed<> expects numeric \
+                                         type parameter"),
+                                t.span
+                            ))
                         }
                     },
-                    x => Err(msg::Message {
-                        kind:   msg::MessageKind::Error,
-                        msg:    format!("invalid parameterized type `{}'", x),
-                        start:  None,
-                        end:    None
-                    })
+                    x => Err(TypeRef::error(
+                        format!("invalid parameterized type `{}'", x),
+                        t.span
+                    ))
                 }
             },
             tree::TypeBody::Pointer(ref to) =>

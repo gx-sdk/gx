@@ -18,6 +18,7 @@ pub type Input = Vec<Decl>;
 
 pub struct Path(pub Vec<Id>);
 
+#[derive(Copy)]
 pub struct Span {
     pub start:     Position,
     pub end:       Position,
@@ -379,6 +380,10 @@ impl Dumpable for TypeDecl {
 
 impl Dumpable for TypeSpec {
     fn dump(&self, d: &mut DumpContext) {
+        /*match ::semantic::types::TypeRef::from_tree(self) {
+            Ok(x)  => print!("\n--------> {:?}", x),
+            Err(m) => print!("\n--(err)-> {}", m)
+        }*/
         d.push_str("TypeSpec");
         self.body.dump(d);
         self.span.dump(d);
