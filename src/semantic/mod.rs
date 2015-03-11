@@ -19,8 +19,16 @@
 use std::cell::RefCell;
 use std::fmt;
 
+use frontend::tree;
+
 pub struct Path {
     pub components: Vec<String>
+}
+
+impl Path {
+    pub fn from_tree(t: &tree::Path) -> Path {
+        Path { components: t.0.clone() }
+    }
 }
 
 impl fmt::Debug for Path {
@@ -45,3 +53,4 @@ pub enum RefBody<T> {
 pub type Ref<T> = RefCell<RefBody<T>>;
 
 pub mod types;
+pub mod unit;

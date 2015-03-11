@@ -12,32 +12,50 @@ use std::fmt;
 
 use msg;
 use semantic::*;
+use frontend::tree;
 
 /// A reference to a type node. References are either a `semantic::Path`, or
 /// an actual Rust reference to a `Type`. This corresponds to an edge in the
 /// type graph.
 pub struct TypeRef<'a> {
-    cell: Rc<Ref<&'a Type<'a>>>
+    cell: Ref<Rc<Type<'a>>>
 }
 
 impl<'a> TypeRef<'a> {
     /// Constructs a new `TypeRef` object from a vanilla Rust reference.
-    pub fn new(t: &'a Type<'a>) -> TypeRef<'a> {
-        TypeRef { cell: Rc::new(RefCell::new(RefBody::Res(t))) }
+    pub fn new(t: Type<'a>) -> TypeRef<'a> {
+        TypeRef { cell: RefCell::new(RefBody::Res(Rc::new(t))) }
     }
 
-    /// Attempts to retrieve a vanilla Rust reference. In the event of a
-    /// failure, a `msg::Message` is constructed with information about the
-    /// error.
-    pub fn unwrap(&self) -> Result<&'a Type<'a>, msg::Message> {
-        match *self.cell.borrow() {
-            RefBody::Named(ref p) => Err(msg::Message {
-                    kind:   msg::MessageKind::Internal,
-                    msg:    format!("{:?} unresolved", p),
-                    start:  None,
-                    end:    None,
-                }),
-            RefBody::Res(p) => Ok(p),
+    /// Constructs a new `TypeRef` object from an unresolved path.
+    pub fn unresolved(p: Path) -> TypeRef<'a> {
+        TypeRef { cell: RefCell::new(RefBody::Named(p)) }
+    }
+
+    /// Converts the parse tree type specifier to a semantic tree type
+    /// reference.
+    pub fn from_tree(t: &tree::TypeSpec) -> TypeRef<'a> {
+        match *t {
+            tree::TypeSpec::Alias(ref nm) => {
+                if nm.0.len() == 1 {
+                    match nm.0[0].as_slice() {
+                        "u8"   => TypeRef::new(Type::U8),
+                        "u16"  => TypeRef::new(Type::U16),
+                        "u32"  => TypeRef::new(Type::U32),
+                        "s8"   => TypeRef::new(Type::S8),
+                        "s16"  => TypeRef::new(Type::S16),
+                        "s32"  => TypeRef::new(Type::S32),
+                        _      => TypeRef::unresolved(Path::from_tree(nm)),
+                    }
+                } else {
+                    TypeRef::unresolved(Path::from_tree(nm))
+                }
+            },
+            tree::TypeSpec::Pointer(ref to) =>
+                TypeRef::new(Type::Pointer(TypeRef::from_tree(to))),
+            tree::TypeSpec::Array(n, ref of) =>
+                TypeRef::new(Type::Array(n, TypeRef::from_tree(of))),
+            _ => TypeRef::unresolved(Path { components: Vec::new() }),
         }
     }
 }
@@ -46,9 +64,9 @@ impl<'a> fmt::Debug for TypeRef<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self.cell.borrow() {
             RefBody::Named(ref p) =>
-                write!(f, "ref={:?}", p),
+                write!(f, "'{:?}'", p),
             RefBody::Res(ref p) =>
-                write!(f, "t={:?}", p)
+                write!(f, "{:?}", p)
         }
     }
 }
@@ -74,7 +92,7 @@ pub enum Type<'a> {
     Bitvec     (usize, Vec<BitvecMember>),
 
     Pointer    (TypeRef<'a>),
-    Array      (usize, TypeRef<'a>),
+    Array      (isize, TypeRef<'a>),
     Struct     (Vec<StructMember<'a>>),
 }
 
