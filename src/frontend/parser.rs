@@ -47,6 +47,13 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
         }
     }
 
+    fn span_to_here(&mut self, start: Position) -> Span {
+        Span {
+            start:  start,
+            end:    self.pos()
+        }
+    }
+
     fn error(&mut self, p: Position, msg: String) -> msg::Message {
         msg::Message {
             kind:   msg::MessageKind::Error,
@@ -242,12 +249,9 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
         let body = try!(self.decl_body());
 
         Ok(Decl {
-            is_pub:        is_pub,
-            body:          body,
-            span: Span {
-                start:     start,
-                end:       self.pos(),
-            }
+            is_pub:  is_pub,
+            body:    body,
+            span:    self.span_to_here(start),
         })
     }
 
@@ -374,10 +378,7 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
                         try!(self.expect(Token::Greater));
                         Ok(TypeSpec {
                             body: x,
-                            span: Span {
-                                start:  start,
-                                end:    self.pos()
-                            }
+                            span: self.span_to_here(start),
                         })
                     },
 
@@ -385,10 +386,7 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
                         self.untok(x);
                         Ok(TypeSpec {
                             body: TypeBody::Alias(p),
-                            span: Span {
-                                start:  start,
-                                end:    self.pos()
-                            }
+                            span: self.span_to_here(start),
                         })
                     }
                 }
@@ -398,10 +396,7 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
                 let body = TypeBody::Pointer(Box::new(try!(self.type_spec())));
                 Ok(TypeSpec {
                     body: body,
-                    span: Span {
-                        start:  start,
-                        end:    self.pos()
-                    }
+                    span: self.span_to_here(start),
                 })
             },
 
@@ -411,10 +406,7 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
                 let body = TypeBody::Array(x, Box::new(try!(self.type_spec())));
                 Ok(TypeSpec {
                     body: body,
-                    span: Span {
-                        start:  start,
-                        end:    self.pos()
-                    }
+                    span: self.span_to_here(start),
                 })
             },
 
@@ -456,10 +448,7 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
 
         Ok(TypeSpec {
             body: TypeBody::Struct(body),
-            span: Span {
-                start:  start,
-                end:    self.pos()
-            }
+            span: self.span_to_here(start),
         })
     }
 
@@ -501,10 +490,7 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
 
         Ok(TypeSpec {
             body: TypeBody::Bitvec(size, body),
-            span: Span {
-                start:  start,
-                end:    self.pos()
-            }
+            span: self.span_to_here(start),
         })
     }
 
@@ -787,10 +773,7 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
                 None =>
                     return Ok(Stmt {
                         body: StmtBody::Compound(stmts),
-                        span: Span {
-                            start: start,
-                            end:   self.pos()
-                        }
+                        span: self.span_to_here(start),
                     }),
             }
         }
@@ -809,10 +792,7 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
             Token::Var      =>
                 Some(Stmt {
                     body: StmtBody::Var(try!(self.var_decl())),
-                    span: Span {
-                        start: tok.1,
-                        end:   self.pos()
-                    }
+                    span: self.span_to_here(tok.1),
                 }),
 
             Token::If       =>
@@ -901,10 +881,7 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
         try!(self.expect(Token::Semicolon));
         Ok(Some(Stmt {
             body: body,
-            span: Span {
-                start: p,
-                end:   self.pos()
-            }
+            span: self.span_to_here(p),
         }))
     }
 
@@ -930,10 +907,7 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
                 tb:   tb,
                 fb:   fb,
             }),
-            span: Span {
-                start: start,
-                end:   self.pos()
-            }
+            span: self.span_to_here(start),
         })
     }
 
@@ -955,10 +929,7 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
                 ex:    ex,
                 cases: body,
             }),
-            span: Span {
-                start: start,
-                end:   self.pos()
-            }
+            span: self.span_to_here(start),
         })
     }
 
@@ -1017,10 +988,7 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
         });
         Ok(Stmt {
             body: body,
-            span: Span {
-                start: start,
-                end:   self.pos()
-            }
+            span: self.span_to_here(start),
         })
     }
 
@@ -1040,10 +1008,7 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
         });
         Ok(Stmt {
             body: body,
-            span: Span {
-                start: start,
-                end:   self.pos()
-            }
+            span: self.span_to_here(start),
         })
     }
 
@@ -1066,10 +1031,7 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
         });
         Ok(Stmt {
             body: body,
-            span: Span {
-                start: start,
-                end:   self.pos()
-            }
+            span: self.span_to_here(start),
         })
     }
 
