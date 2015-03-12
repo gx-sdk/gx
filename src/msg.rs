@@ -4,7 +4,21 @@
 // For licensing information, refer to the COPYING file
 // in the project root
 
-//! Message handling core
+//! A compiler's most important user-facing feature, aside from the compilation
+//! itself, is arguably its error handling mechanism.
+//!
+//! At the center is the `Message` struct, which contains a `kind` field to
+//! indicate the kind of message, a `msg` containing the actual text of the
+//! message, and optional `start` and `end` fields indicating the location or
+//! range of locations that the message concerns.
+//!
+//! A `MessageList` struct is a wrapper around a vector of `Message`s. It's
+//! often more useful to return a `Result<T, MessageList>` than a `Result<T,
+//! Message>`. A simple example is converting a parse tree into a semantic
+//! graph. Encountering an error in one function should not halt compilation
+//! altogether, since errors in later functions may be useful to the user.
+//! Therefore, it would make sense for the error case in semantic conversion to
+//! return a `MessageList` rather than a single `Message`
 
 use std::fmt;
 
@@ -37,6 +51,14 @@ pub struct Message {
     pub msg:           String,
     pub start:         Option<Position>,
     pub end:           Option<Position>,
+}
+
+impl Message {
+    fn as_list(self) -> MessageList {
+        MessageList {
+            msgs: vec![self]
+        }
+    }
 }
 
 impl fmt::Display for Message {
@@ -112,4 +134,18 @@ pub enum MessageKind {
     /// The message is a diagnostic message. Potential use cases include
     /// informing the user of missed optimization opportunities.
     Info
+}
+
+/// A list of messages.
+pub struct MessageList {
+    pub msgs:  Vec<Message>
+}
+
+impl fmt::Display for MessageList {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for m in self.msgs.iter() {
+            try!(m.fmt(f));
+        }
+        Ok(())
+    }
 }
