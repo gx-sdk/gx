@@ -13,12 +13,12 @@
 //! range of locations that the message concerns.
 //!
 //! A `MessageList` struct is a wrapper around a vector of `Message`s. It's
-//! often more useful to return a `Result<T, MessageList>` than a `Result<T,
-//! Message>`. A simple example is converting a parse tree into a semantic
-//! graph. Encountering an error in one function should not halt compilation
-//! altogether, since errors in later functions may be useful to the user.
-//! Therefore, it would make sense for the error case in semantic conversion to
-//! return a `MessageList` rather than a single `Message`
+//! often more useful to return a `Result<T, MessageList>` than a
+//! `Result<T, Message>`. A simple example is converting a parse tree into a
+//! semantic graph. Encountering an error in one function should not halt
+//! compilation altogether, since errors in later functions may be useful to the
+//! user.  Therefore, it would make sense for the error case in semantic
+//! conversion to return a `MessageList` rather than a single `Message`
 
 use std::fmt;
 
