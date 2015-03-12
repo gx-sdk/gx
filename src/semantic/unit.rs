@@ -53,21 +53,37 @@ impl<'a> Unit<'a> {
 
     pub fn from_tree_input(t: &tree::Input) -> SemResult<Unit<'a>> {
         let mut u = Unit::empty(String::from_str("<input>"));
+        let mut msgs = msg::MessageList::empty();
 
         for decl in t.iter() {
-            try!(u.add_from_tree(decl));
+            match u.add_from_tree(decl) {
+                Ok(_) => { },
+                Err(m) => { msgs.add_all(m) }
+            }
         }
 
-        Ok(u)
+        if msgs.is_empty() {
+            Ok(u)
+        } else {
+            Err(msgs)
+        }
     }
 
     pub fn from_tree_unit(t: &tree::UnitDecl) -> SemResult<Unit<'a>> {
         let mut u = Unit::empty(t.name.clone());
+        let mut msgs = msg::MessageList::empty();
 
         for decl in t.decls.iter() {
-            try!(u.add_from_tree(decl));
+            match u.add_from_tree(decl) {
+                Ok(_) => { },
+                Err(m) => { msgs.add_all(m) }
+            }
         }
 
-        Ok(u)
+        if msgs.is_empty() {
+            Ok(u)
+        } else {
+            Err(msgs)
+        }
     }
 }

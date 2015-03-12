@@ -141,6 +141,31 @@ pub struct MessageList {
     pub msgs:  Vec<Message>
 }
 
+impl MessageList {
+    /// Constructs an empty `MessageList`
+    pub fn empty() -> MessageList {
+        MessageList {
+            msgs:  Vec::new()
+        }
+    }
+
+    /// Tests if the `MessageList` is empty
+    pub fn is_empty(&self) -> bool {
+        self.msgs.len() == 0
+    }
+
+    /// Consumes `other`, adding all of its entries to the end of the current
+    /// `MessageList`
+    pub fn add_all(&mut self, other: MessageList) {
+        self.msgs.extend(other.msgs.into_iter());
+    }
+
+    /// Adds `other` to the end of the current `MessageList`
+    pub fn add(&mut self, other: Message) {
+        self.msgs.push(other)
+    }
+}
+
 impl fmt::Display for MessageList {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for m in self.msgs.iter() {
