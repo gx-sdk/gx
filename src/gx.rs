@@ -23,6 +23,7 @@ pub mod semantic;
 pub mod expr;
 pub mod backend;
 pub mod msg;
+pub mod dump;
 
 mod driver {
     extern crate getopts;
@@ -36,6 +37,7 @@ mod driver {
     use frontend::lexer;
     use frontend::parser;
     use semantic::unit;
+    use dump::*;
 
     use msg;
 
