@@ -6,14 +6,14 @@
 
 //! Semantic information concerning types.
 
-use std::rc::Rc;
 use std::cell::RefCell;
 use std::fmt;
+use std::rc::Rc;
 
-use msg;
-use semantic::*;
 use expr::Expr;
 use frontend::tree;
+use msg;
+use semantic::*;
 
 /// A reference to a type node. References are either a `semantic::Path`, or
 /// an actual Rust reference to a `Type`. This corresponds to an edge in the

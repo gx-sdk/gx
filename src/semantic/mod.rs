@@ -19,8 +19,8 @@
 use std::cell::RefCell;
 use std::fmt;
 
-use msg;
 use frontend::tree;
+use msg;
 
 pub type SemResult<T> = Result<T, msg::MessageList>;
 

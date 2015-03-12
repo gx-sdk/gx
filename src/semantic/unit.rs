@@ -7,13 +7,12 @@
 //! Semantic information for units
 
 use std::collections::HashMap;
-use std::fmt;
 
+use dump::*;
+use frontend::tree;
 use msg;
 use semantic::*;
 use semantic::types::TypeRef;
-use frontend::tree;
-use dump::*;
 
 pub struct Unit<'a> {
     pub name:      String,

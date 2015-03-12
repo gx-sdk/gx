@@ -7,17 +7,16 @@
 //! Parser for the `gx` language. Internally is a mostly recursive descent
 //! parser, with some PEG-like functions to handle associativity correctly.
 
-use frontend::token::Token;
-use frontend::tree::*;
+use std::io;
+use std::result;
+
+use expr::*;
 use frontend::lexer::Lexer;
 use frontend::lexer::LexerToken;
 use frontend::lexer::Position;
+use frontend::token::Token;
+use frontend::tree::*;
 use msg;
-
-use expr::*;
-
-use std::io;
-use std::result;
 
 /// An instance of a parser. If you have an `Iterator<Token>` go ahead and
 /// create one with `Parser::new`. The resulting `Parser` instance is full

@@ -7,10 +7,9 @@
 //! Parse tree structures. Most of these match almost exactly with the
 //! equivalents in the grammar.
 
-use frontend::lexer::Position;
-
-use expr::Expr;
 use dump::*;
+use expr::Expr;
+use frontend::lexer::Position;
 
 pub type Id = String;
 pub type Number = isize;

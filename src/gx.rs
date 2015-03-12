@@ -18,12 +18,12 @@
 //! implementation of the `gx` language. A small driver program is provided
 //! as well that is invoked by the `gx` executable.
 
-pub mod frontend;
-pub mod semantic;
-pub mod expr;
 pub mod backend;
-pub mod msg;
 pub mod dump;
+pub mod expr;
+pub mod frontend;
+pub mod msg;
+pub mod semantic;
 
 mod driver {
     extern crate getopts;
@@ -33,13 +33,13 @@ mod driver {
     use std::fmt;
     use std::fs;
     use std::io;
-    use frontend::tree::*;
+
+    use dump::*;
     use frontend::lexer;
     use frontend::parser;
-    use semantic::unit;
-    use dump::*;
-
+    use frontend::tree::*;
     use msg;
+    use semantic::unit;
 
     pub enum Error {
         Messages   (msg::MessageList),
