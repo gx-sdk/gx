@@ -1,0 +1,2 @@
+type A: bcd<1, 2>;
+type B: fixed<3>;
