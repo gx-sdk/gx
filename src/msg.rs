@@ -54,7 +54,7 @@ pub struct Message {
 }
 
 impl Message {
-    fn as_list(self) -> MessageList {
+    pub fn to_list(self) -> MessageList {
         MessageList {
             msgs: vec![self]
         }
@@ -144,7 +144,7 @@ pub struct MessageList {
 impl fmt::Display for MessageList {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for m in self.msgs.iter() {
-            try!(m.fmt(f));
+            try!(write!(f, "{}\n", m));
         }
         Ok(())
     }

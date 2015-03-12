@@ -29,7 +29,7 @@ pub struct Parser<It> {
     ungot: Vec<LexerToken>,
 }
 
-pub type Result<T> = result::Result<T, msg::Message>;
+pub type Result<T> = result::Result<T, msg::MessageList>;
 
 impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
     pub fn new(input: Lexer<It>) -> Parser<It> {
@@ -54,7 +54,7 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
         }
     }
 
-    fn error(&mut self, p: Position, msg: String) -> msg::Message {
+    fn error(&mut self, p: Position, msg: String) -> msg::MessageList {
         msg::Message {
             kind:   msg::MessageKind::Error,
             msg:    msg,
@@ -64,10 +64,10 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
                 col:   p.col
             }),
             end:    None
-        }
+        }.to_list()
     }
 
-    fn error_here(&mut self, msg: &str) -> msg::Message {
+    fn error_here(&mut self, msg: &str) -> msg::MessageList {
         let here = self.pos();
         self.error(here, String::from_str(msg))
     }

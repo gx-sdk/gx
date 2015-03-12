@@ -40,7 +40,7 @@ mod driver {
     use msg;
 
     pub enum Error {
-        Message    (msg::Message),
+        Messages   (msg::MessageList),
         IO         (String, io::Error), // (Path, Error)
         GetOpts    (getopts::Fail),
     }
@@ -51,7 +51,7 @@ mod driver {
             match *self {
                 IO(ref p, ref e) => write!(f, "Could not read file `{}`: {}", p, e),
                 GetOpts(ref e) => write!(f, "Invalid invocation of gx: {}", e),
-                Message(ref m) => write!(f, "Compile error: {}", m),
+                Messages(ref m) => write!(f, "{}Compile failed", m),
             }
         }
     }
@@ -98,7 +98,7 @@ mod driver {
             use std::io::ReadExt;
             let mut p = match parse(io::BufReader::new(file).chars()) {
                 Ok(p) => p,
-                Err(m) => return Err(Error::Message(m))
+                Err(m) => return Err(Error::Messages(m))
             };
             inputs.append(&mut p);
         }
@@ -108,7 +108,7 @@ mod driver {
         }
 
         if let Err(m) = unit::Unit::from_tree_input(&inputs) {
-            return Err(Error::Message(m));
+            return Err(Error::Messages(m));
         }
 
         Ok(())

@@ -44,7 +44,7 @@ impl<'a> TypeRef<'a> {
         TypeRef { cell: RefCell::new(RefBody::Named(p)) }
     }
 
-    fn error(msg: String, s: tree::Span) -> msg::Message {
+    fn error(msg: String, s: tree::Span) -> msg::MessageList {
         msg::Message {
             kind: msg::MessageKind::Error,
             msg: msg,
@@ -58,7 +58,7 @@ impl<'a> TypeRef<'a> {
                 line:  s.end.line,
                 col:   s.end.col
             }),
-        }
+        }.to_list()
     }
 
     /// Converts the parse tree type specifier to a semantic tree type
