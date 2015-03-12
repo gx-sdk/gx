@@ -109,9 +109,14 @@ mod driver {
             dump(&inputs);
         }
 
-        if let Err(m) = unit::Unit::from_tree_input(&inputs) {
-            return Err(Error::Messages(m));
-        }
+        let prog = match unit::Unit::from_tree_input(&inputs) {
+            Ok(p) => p,
+            Err(m) => return Err(Error::Messages(m)),
+        };
+
+        let mut d = DumpContext::new();
+        prog.dump(&mut d);
+        d.end();
 
         Ok(())
     }

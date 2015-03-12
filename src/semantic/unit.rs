@@ -13,6 +13,7 @@ use msg;
 use semantic::*;
 use semantic::types::TypeRef;
 use frontend::tree;
+use dump::*;
 
 pub struct Unit<'a> {
     pub name:      String,
@@ -85,5 +86,18 @@ impl<'a> Unit<'a> {
         } else {
             Err(msgs)
         }
+    }
+}
+
+impl<'a> Dumpable for Unit<'a> {
+    fn dump(&self, d: &mut DumpContext) {
+        d.push_str(format!("unit {}", self.name).as_slice());
+        for (k, v) in self.units.iter() {
+            v.dump(d);
+        }
+        for (k, v) in self.types.iter() {
+            d.put_ln(format!("type {} = {:?}", k, v));
+        }
+        d.pop();
     }
 }
