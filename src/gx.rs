@@ -35,6 +35,7 @@ mod driver {
     use frontend::tree::*;
     use frontend::lexer;
     use frontend::parser;
+    use semantic::unit;
 
     use msg;
 
@@ -104,6 +105,10 @@ mod driver {
 
         if matches.opt_present("dump") {
             dump(&inputs);
+        }
+
+        if let Err(m) = unit::Unit::from_tree_input(&inputs) {
+            return Err(Error::Message(m));
         }
 
         Ok(())
