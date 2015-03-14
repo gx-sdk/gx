@@ -61,5 +61,6 @@ pub enum RefBody<T> {
 
 pub type Ref<T> = RefCell<RefBody<T>>;
 
+pub mod symbol;
 pub mod types;
 pub mod unit;

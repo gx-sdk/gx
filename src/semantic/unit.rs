@@ -18,6 +18,7 @@ pub struct Unit<'a> {
     pub name:      String,
     pub units:     HashMap<String, Unit<'a>>,
     pub types:     HashMap<String, TypeRef<'a>>,
+    pub ns:        symbol::SymbolTable<'a>
 }
 
 impl<'a> Unit<'a> {
@@ -25,7 +26,8 @@ impl<'a> Unit<'a> {
         Unit {
             name:   name,
             units:  HashMap::new(),
-            types:  HashMap::new()
+            types:  HashMap::new(),
+            ns:     symbol::SymbolTable::empty(),
         }
     }
 
@@ -91,7 +93,7 @@ impl<'a> Unit<'a> {
 impl<'a> Dumpable for Unit<'a> {
     fn dump(&self, d: &mut DumpContext) {
         d.push_str(format!("unit {}", self.name).as_slice());
-        for (k, v) in self.units.iter() {
+        for v in self.units.values() {
             v.dump(d);
         }
         for (k, v) in self.types.iter() {
