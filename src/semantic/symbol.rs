@@ -47,15 +47,13 @@ impl<'a> SymbolTable<'a> {
         }
 
         match self.tab.get(&p.components[idx]) {
-            None => return None,
+            None => None,
 
             Some(s) => {
-                if idx != p.components.len() - 1 {
+                if idx < p.components.len() - 1 {
                     match s.body {
-                        SymbolBody::Unit(u) =>
-                            u.ns.lookup_at(p, idx + 1),
-                        _ =>
-                            None
+                        SymbolBody::Unit(u) => u.ns.lookup_at(p, idx + 1),
+                        _ => None
                     }
                 } else {
                     Some(s)
