@@ -67,7 +67,7 @@ impl<'a> TypeRef<'a> {
         match t.body {
             tree::TypeBody::Alias(ref nm) => {
                 Ok(if nm.0.len() == 1 {
-                    match nm.0[0].as_slice() {
+                    match &nm.0[0][..] {
                         "u8"   => TypeRef::new(Type::U8),
                         "u16"  => TypeRef::new(Type::U16),
                         "u32"  => TypeRef::new(Type::U32),
@@ -89,7 +89,7 @@ impl<'a> TypeRef<'a> {
                     ));
                 }
 
-                match nm.0[0].as_slice() {
+                match &nm.0[0][..] {
                     "bcd" => {
                         if ps.len() != 1 {
                             return Err(TypeRef::error(

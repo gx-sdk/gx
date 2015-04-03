@@ -92,7 +92,7 @@ impl<'a> Unit<'a> {
 
 impl<'a> Dumpable for Unit<'a> {
     fn dump(&self, d: &mut DumpContext) {
-        d.push_str(format!("unit {}", self.name).as_slice());
+        d.push_str(&format!("unit {}", self.name)[..]);
         for v in self.units.values() {
             v.dump(d);
         }

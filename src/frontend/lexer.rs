@@ -7,7 +7,6 @@
 //! Lexer for the `gx` language. Very simple lexer.
 
 use std::io;
-use std::num::FromStrRadix;
 
 use frontend::token::*;
 
@@ -188,7 +187,7 @@ impl<It: Iterator<Item = Result<char, io::CharsError>>> Lexer<It> {
                 (10u32, &s[..])
             };
 
-        match FromStrRadix::from_str_radix(num, base) {
+        match usize::from_str_radix(num, base) {
             Ok(x) => LexerStep::Step(Token::Number(x)),
             Err(e) => self.die(
                 &format!("invalid base {} constant {}: {}", base, s, e)

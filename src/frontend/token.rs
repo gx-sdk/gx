@@ -248,7 +248,7 @@ impl Token {
         match *self {
             Token::Number(x) => x.to_string(),
             Token::Identifier(ref x) => x.clone(),
-            Token::String(ref x) => format!("\"{}\"", escape_str(x.as_slice())),
+            Token::String(ref x) => format!("\"{}\"", escape_str(&x[..])),
             Token::Character(x) => format!("'{}'", escape_char(x)),
             _ => match self.attrs() { TokenAttr(_, x) => String::from_str(x) }
         }

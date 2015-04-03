@@ -62,6 +62,7 @@ impl<'a> SymbolTable<'a> {
         }
     }
 
+    /// Performs lookup of the named symbol
     pub fn lookup(&'a self, p: &'a Path) -> Option<&'a Symbol<'a>> {
         self.lookup_at(p, 0)
     }

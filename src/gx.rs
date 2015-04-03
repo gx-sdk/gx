@@ -9,9 +9,7 @@
 // These were added to shut rustc up. They need to be removed eventually and
 // dealt with accordingly.
 #![feature(collections)]
-#![feature(core)] // required for FromStrRadix in frontend::lexer::read_int()
 #![feature(io)]
-#![feature(unicode)]
 #![feature(exit_status)] // for std::env::set_exit_status
 
 //! This crate and all its modules are the components of the reference
@@ -29,7 +27,7 @@ mod driver {
     extern crate getopts;
 
     use std::env;
-    use std::error;
+    use std::convert;
     use std::fmt;
     use std::fs;
     use std::io;
@@ -58,8 +56,8 @@ mod driver {
         }
     }
 
-    impl error::FromError<getopts::Fail> for Error {
-        fn from_error(err: getopts::Fail) -> Error {
+    impl convert::From<getopts::Fail> for Error {
+        fn from(err: getopts::Fail) -> Error {
             Error::GetOpts(err)
         }
     }
@@ -97,7 +95,7 @@ mod driver {
 
         let mut inputs = Vec::new();
         for file in files {
-            use std::io::ReadExt;
+            use std::io::Read;
             let mut p = match parse(io::BufReader::new(file).chars()) {
                 Ok(p) => p,
                 Err(m) => return Err(Error::Messages(m))
