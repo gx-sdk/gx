@@ -6,7 +6,7 @@
 
 //! Dumping
 
-#[derive(Copy)]
+#[derive(Clone,Copy)]
 pub struct DumpContext {
     pub blank: bool,
     pub depth: isize,

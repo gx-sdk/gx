@@ -18,7 +18,7 @@ pub type Input = Vec<Decl>;
 
 pub struct Path(pub Vec<Id>);
 
-#[derive(Copy)]
+#[derive(Clone,Copy)]
 pub struct Span {
     pub start:     Position,
     pub end:       Position,
@@ -86,7 +86,7 @@ pub struct Storage {
     pub loc:       StorageLoc,
     pub params:    Vec<StorageParam>,
 }
-#[derive(Copy)]
+#[derive(Clone,Copy)]
 pub enum StorageLoc {
     Default,
     RAM,

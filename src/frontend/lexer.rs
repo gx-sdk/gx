@@ -59,7 +59,7 @@ pub struct Lexer<It> {
     sent_eof: bool,
 }
 
-#[derive(Copy)]
+#[derive(Clone,Copy)]
 pub struct Position {
     pub line:  usize,
     pub col:   usize,
