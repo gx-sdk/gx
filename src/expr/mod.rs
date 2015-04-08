@@ -51,7 +51,7 @@ pub enum Expr<P> {
 
 /// Binary operators, from a grammar standpoint. This list is re-implemented
 /// in later passes as needed.
-#[derive(Debug,Copy)]
+#[derive(Debug,Clone,Copy)]
 pub enum BinOp {
     #[doc = "addition"]                         Add,
     #[doc = "subtraction"]                      Sub,
@@ -75,7 +75,7 @@ pub enum BinOp {
 }
 
 /// Unary operators, taking a single operand
-#[derive(Debug,Copy)]
+#[derive(Debug,Clone,Copy)]
 pub enum UnOp {
     #[doc = "pre-incerment"]                    PreIncr,
     #[doc = "post-increment"]                   PostIncr,

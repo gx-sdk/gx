@@ -142,7 +142,7 @@ pub fn find_keyword(id: &str) -> Option<Token> {
     }
 }
 
-#[derive(Copy)]
+#[derive(Clone,Copy)]
 pub struct TokenAttr(&'static str, &'static str);
 
 impl Token {
