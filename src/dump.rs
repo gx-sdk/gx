@@ -29,21 +29,21 @@ impl DumpContext {
             return;
         }
 
-        self.put(String::from_str("\n"));
-        for _ in (0..self.depth) {
+        self.put(format!("\n"));
+        for _ in 0..self.depth {
             print!("  ");
         }
         self.blank = true;
     }
 
     pub fn push_str(&mut self, s: &str) {
-        self.push(String::from_str(s));
+        self.push(s.to_owned());
     }
 
     pub fn push(&mut self, s: String) {
         self.newline();
         self.put(s);
-        self.put(String::from_str(":"));
+        self.put(format!(":"));
         self.depth += 1;
     }
 
@@ -54,7 +54,7 @@ impl DumpContext {
     }
 
     pub fn put_ln_str(&mut self, s: &str) {
-        self.put_ln(String::from_str(s));
+        self.put_ln(s.to_owned());
     }
 
     pub fn put_ln(&mut self, s: String) {
@@ -74,4 +74,3 @@ impl DumpContext {
         self.blank = true;
     }
 }
-

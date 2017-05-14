@@ -54,7 +54,7 @@ impl<'a> Unit<'a> {
     }
 
     pub fn from_tree_input(t: &tree::Input) -> SemResult<Unit<'a>> {
-        let mut u = Unit::empty(String::from_str("<input>"));
+        let mut u = Unit::empty("<input>".to_owned());
         let mut msgs = msg::MessageList::empty();
 
         for decl in t.iter() {

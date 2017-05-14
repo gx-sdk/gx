@@ -49,12 +49,12 @@ impl<'a> TypeRef<'a> {
             kind: msg::MessageKind::Error,
             msg: msg,
             start: Some(msg::Position {
-                file:  String::from_str("<input>"), // TODO
+                file:  "<input>".to_owned(), // TODO
                 line:  s.start.line,
                 col:   s.start.col
             }),
             end: Some(msg::Position {
-                file:  String::from_str("<input>"), // TODO
+                file:  "<input>".to_owned(), // TODO
                 line:  s.end.line,
                 col:   s.end.col
             }),

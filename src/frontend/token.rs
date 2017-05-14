@@ -250,7 +250,7 @@ impl Token {
             Token::Identifier(ref x) => x.clone(),
             Token::String(ref x) => format!("\"{}\"", escape_str(&x[..])),
             Token::Character(x) => format!("'{}'", escape_char(x)),
-            _ => match self.attrs() { TokenAttr(_, x) => String::from_str(x) }
+            _ => match self.attrs() { TokenAttr(_, x) => x.to_owned() }
         }
     }
 }

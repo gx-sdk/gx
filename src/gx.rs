@@ -4,13 +4,9 @@
 // For licensing information, refer to the COPYING file
 // in the project root
 
-#![unstable = "awaiting end-to-end implementation"]
-
 // These were added to shut rustc up. They need to be removed eventually and
 // dealt with accordingly.
-#![feature(collections)]
 #![feature(io)]
-#![feature(exit_status)] // for std::env::set_exit_status
 
 //! This crate and all its modules are the components of the reference
 //! implementation of the `gx` language. A small driver program is provided
@@ -63,7 +59,7 @@ mod driver {
     }
 
     fn parse(ch: io::Chars<io::BufReader<fs::File>>) -> parser::Result<Input> {
-        let nm = String::from_str("<input>");
+        let nm = "<input>".to_string();
         parser::Parser::new(lexer::Lexer::new(nm, ch)).file()
     }
 
@@ -80,8 +76,8 @@ mod driver {
 
         opts.optflag("", "dump", "dump parse tree");
 
-        let args: Vec<String> = env::args().collect();
-        let matches = try!(opts.parse(args.tail()));
+        let args: Vec<String> = env::args().skip(1).collect();
+        let matches = try!(opts.parse(args));
 
         // Ensure all files can be read before proceeding
         let mut files = Vec::new();
@@ -121,9 +117,7 @@ mod driver {
 }
 
 fn main() {
-    let result = driver::main();
-    if let Err(e) = result {
-        println!("{}", e);
-        std::env::set_exit_status(1);
+    if let Err(e) = driver::main() {
+        panic!("exited with error: {}", e);
     }
 }

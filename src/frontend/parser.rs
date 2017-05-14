@@ -68,7 +68,7 @@ impl<It: Iterator<Item = result::Result<char, io::CharsError>>> Parser<It> {
 
     fn error_here(&mut self, msg: &str) -> msg::MessageList {
         let here = self.pos();
-        self.error(here, String::from_str(msg))
+        self.error(here, msg.to_owned())
     }
 
     fn untok(&mut self, t: LexerToken) {
